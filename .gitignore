@@ -3,6 +3,15 @@ node_modules/
 
 # Env files
 *.env
+*.env.*
+
+# Sample env files (do not publish secrets)
+*.env.example
+frontend/.env.sample
+backend/.env.sample
+
+# Local scratch files with credentials
+NOTE PAD FOR ECOMMERCE.txt
 
 # Logs
 logs/
