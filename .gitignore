@@ -1,0 +1,13 @@
+# Node
+node_modules/
+
+# Env files
+*.env
+
+# Logs
+logs/
+*.log
+
+# OS noise
+.DS_Store
+Thumbs.db
