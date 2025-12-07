@@ -43,7 +43,7 @@ module.exports = {
             "sku": "extracted sku if available",
             "category": "extracted category if available"
           },
-          "sales_pitch": "A short, persuasive sentence to convince the user (only if intent is RECOMMENDATION_AGENT or GENERAL_CHAT)"
+          "reply": "If the intent is GENERAL_CHAT, write the conversational response here. If the intent is RECOMMENDATION_AGENT, write a persuasive sales pitch here. For others, leave empty or provide a brief transition."
         }
       `;
 
@@ -76,7 +76,7 @@ module.exports = {
           
           if (products.length > 0) {
             const productNames = products.map(p => p.name).join(", ");
-            finalReply = `${parsedIntent.sales_pitch || "Check these out!"} I found some great items for you: ${productNames}. Would you like to know more about any of them?`;
+            finalReply = `${parsedIntent.reply || "Check these out!"} I found some great items for you: ${productNames}. Would you like to know more about any of them?`;
           } else {
             finalReply = "I couldn't find any products matching that description, but I'm sure we have something you'll love. Can you tell me more about what you're looking for?";
           }
@@ -116,17 +116,8 @@ module.exports = {
 
         case "GENERAL_CHAT":
         default:
-          // Let Gemini generate the conversational response directly if it's just chat
-          const chatPrompt = `
-            You are a charismatic and helpful sales assistant for JvlCart.
-            User said: "${message}"
-            Previous intent analysis: ${JSON.stringify(parsedIntent)}
-            
-            Respond to the user directly. Be engaging, polite, and try to steer them towards our products if appropriate.
-            Keep it under 3 sentences.
-          `;
-          const chatResult = await model.generateContent(chatPrompt);
-          finalReply = chatResult.response.text();
+          // Use the reply generated in the first step
+          finalReply = parsedIntent.reply || "I'm here to help with any questions you have about our products!";
           break;
       }
 
@@ -137,7 +128,25 @@ module.exports = {
       };
 
     } catch (error) {
-      console.error("Service Agent Error:", error);
+      console.error("Service Agent Error Full Object:", JSON.stringify(error, null, 2));
+      console.error("Service Agent Error Message:", error.message);
+      
+      // Fallback for Rate Limits (429) or any Gemini error
+      if (error.status === 429 || (error.message && error.message.includes("429")) || (error.message && error.message.includes("quota"))) {
+         console.log("ENTERING FALLBACK MODE due to 429/Quota error");
+         // Simple keyword matching fallback
+         const lowerMsg = message.toLowerCase();
+         if (lowerMsg.includes("laptop") || lowerMsg.includes("phone") || lowerMsg.includes("buy") || lowerMsg.includes("show") || lowerMsg.includes("recommend")) {
+             const products = recommendationAgent.getRecommendations(message, mockUserHistory);
+             return {
+                 reply: "I'm currently experiencing high traffic on my AI brain, but I found these products for you from our catalog:",
+                 data: { products },
+                 intent: "RECOMMENDATION_AGENT"
+             };
+         }
+         return { reply: "I'm currently experiencing very high traffic. Please try again in about a minute." };
+      }
+
       return { reply: "I'm currently experiencing high traffic. Please try again in a moment." };
     }
   }
