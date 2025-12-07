@@ -16,7 +16,7 @@ export default function ChatAssistant() {
     try {
       const { data } = await axios.post("/api/v1/assistant", { message: input });
 
-      const botMessage = { sender: "bot", text: data.reply };
+      const botMessage = { sender: "bot", text: data.reply, data: data.data };
       setMessages((prev) => [...prev, botMessage]);
     } catch (err) {
       setMessages((prev) => [
@@ -50,6 +50,30 @@ export default function ChatAssistant() {
                 className={`chat-message ${msg.sender === "user" ? "user" : "bot"}`}
               >
                 {msg.text}
+                {msg.data && msg.data.products && (
+                  <div className="chat-products">
+                    {msg.data.products.map((product) => (
+                      <div key={product._id} className="chat-product-card">
+                        <img
+                          src={product.images && product.images[0] ? product.images[0].image : "/images/default_product.png"}
+                          alt={product.name}
+                        />
+                        <div className="chat-product-info">
+                          <p className="chat-product-name">{product.name}</p>
+                          <p className="chat-product-price">${product.price}</p>
+                          <a
+                            href={`/product/${product._id}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="chat-product-link"
+                          >
+                            View
+                          </a>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
