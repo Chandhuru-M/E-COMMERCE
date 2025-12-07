@@ -38,6 +38,8 @@ import UpdateOrder from './components/admin/UpdateOrder';
 import UserList from './components/admin/UserList';
 import UpdateUser from './components/admin/UpdateUser';
 import ReviewList from './components/admin/ReviewList';
+import React from "react";
+import Chatbot from "./components/Chatbot";
 
 function App() {
   const [stripeApiKey, setStripeApiKey] = useState("")
@@ -52,6 +54,7 @@ function App() {
 
   return (
     <Router>
+      <Chatbot />
       <div className="App">
         <HelmetProvider>
             <Header/>
