@@ -1,0 +1,20 @@
+[
+  {
+    "sku": "W-221",
+    "name": "Black Leather Watch",
+    "price": 1299,
+    "category": "watch",
+    "color": "black",
+    "image": "watch1.jpg",
+    "stock": 20
+  },
+  {
+    "sku": "W-322",
+    "name": "Rose Gold Analog Watch",
+    "price": 1490,
+    "category": "watch",
+    "color": "rose gold",
+    "image": "watch2.jpg",
+    "stock": 12
+  }
+]
