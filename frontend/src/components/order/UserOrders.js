@@ -10,7 +10,7 @@ export default function UserOrders () {
     const dispatch = useDispatch();
 
     useEffect(() => {
-        dispatch(userOrdersAction)
+        dispatch(userOrdersAction())
     },[])
 
     const setOrders = () => {

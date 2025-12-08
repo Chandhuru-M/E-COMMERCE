@@ -1,32 +1,15 @@
-// const express = require("express");
-// const router = express.Router();
-// const loyaltyAgent = require("../agents/loyaltyAgent");
-
-// router.post("/apply-offers", (req, res) => {
-//   const { user, product, couponCode } = req.body;
-
-//   const result = loyaltyAgent.applyLoyaltyAndOffers(user, product, couponCode);
-//   res.json(result);
-// });
-
-// module.exports = router;
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const loyaltyAgent = require("../agents/loyaltyAgent");
-const { isAuthenticatedUser } = require("../middlewares/authenticate");
+const { checkLoyalty, applyLoyalty, finalizeLoyalty } = require('../controllers/loyaltyController');
+const { isAuthenticatedUser } = require('../middlewares/authenticate');
 
-router.post("/apply-offers", isAuthenticatedUser, async (req, res) => {
-  const { product, couponCode } = req.body;
-  const userId = req.user._id;
+// check requires auth (to show points)
+router.get('/loyalty/check', isAuthenticatedUser, checkLoyalty);
 
-  const result = await loyaltyAgent.applyLoyaltyAndOffers(
-    userId,
-    product,
-    couponCode
-  );
+// apply requires auth (we recommend auth) - but you could allow public apply with 0 points
+router.post('/loyalty/apply', isAuthenticatedUser, applyLoyalty);
 
-  res.json(result);
-});
+// finalize must be called after payment; requires auth
+router.post('/loyalty/finalize', isAuthenticatedUser, finalizeLoyalty);
 
 module.exports = router;
-

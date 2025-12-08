@@ -97,7 +97,10 @@ const orderSchema = mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
-    },
+    },loyalty: {
+  appliedPoints: { type: Number, default: 0 },
+  earnedPoints: { type: Number, default: 0 }
+},
     deliveryStatus: {
         type: String,
         enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered"],

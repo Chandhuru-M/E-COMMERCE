@@ -34,8 +34,20 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
-    loyaltyPoints: { type: Number, default: 0 },
-tier: { type: String, enum: ["SILVER", "GOLD", "PLATINUM"], default: "SILVER" }
+    // inside your existing user schema definition:
+loyaltyPoints: {
+  type: Number,
+  default: 0
+},
+loyaltyHistory: [
+  {
+    type: { type: String }, // 'earn' | 'redeem'
+    points: Number,
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+    createdAt: { type: Date, default: Date.now() },
+    note: String
+  }
+]
 
 })
 

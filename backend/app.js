@@ -14,13 +14,14 @@ app.use('/uploads', express.static(path.join(__dirname,'uploads') ) )
 const products = require('./routes/product')
 const auth = require('./routes/auth')
 const user = require("./routes/user"); // Reverted to 'user'
-// const order = require("./routes/orderRoute"); 
+const order = require("./routes/order"); 
 const payment = require("./routes/paymentRoute");
 const assistant = require("./routes/assistantRoute"); // Import assistant route
 
 app.use('/api/v1/',products);
 app.use('/api/v1/',auth);
 app.use('/api/v1/',user);
+app.use('/api/v1/',order);
 app.use('/api/v1/',payment);
 app.use('/api/v1/', assistant); // Use assistant route
 
