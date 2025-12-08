@@ -1,0 +1,71 @@
+import React, { useState } from "react";
+import axios from "axios";
+import "./ChatAssistant.css";
+
+export default function ChatAssistant() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [isOpen, setIsOpen] = useState(false);
+
+  const sendMessage = async () => {
+    if (!input.trim()) return;
+
+    const userMessage = { sender: "user", text: input };
+    setMessages((prev) => [...prev, userMessage]);
+
+    try {
+      const { data } = await axios.post("/api/v1/assistant", { message: input });
+
+      const botMessage = { sender: "bot", text: data.reply };
+      setMessages((prev) => [...prev, botMessage]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { sender: "bot", text: "Error connecting to assistant." }
+      ]);
+    }
+
+    setInput("");
+  };
+
+  return (
+    <>
+      {/* Floating Button */}
+      <button className="chat-float-btn" onClick={() => setIsOpen(!isOpen)}>
+        💬
+      </button>
+
+      {/* Chat Window */}
+      {isOpen && (
+        <div className="chat-window">
+          <div className="chat-header">
+            <strong>Shopping Assistant</strong>
+            <button onClick={() => setIsOpen(false)}>✖</button>
+          </div>
+
+          <div className="chat-body">
+            {messages.map((msg, index) => (
+              <div
+                key={index}
+                className={`chat-message ${msg.sender === "user" ? "user" : "bot"}`}
+              >
+                {msg.text}
+              </div>
+            ))}
+          </div>
+
+          <div className="chat-footer">
+            <input
+              type="text"
+              placeholder="Ask me anything..."
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+            />
+            <button onClick={sendMessage}>Send</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
