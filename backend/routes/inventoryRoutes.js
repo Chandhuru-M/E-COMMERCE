@@ -8,8 +8,19 @@
 // router.post("/inventory/release", inv.releaseReservation);
 
 // module.exports = router;
+
+
+// const express = require("express");
+// const { reserveStockController } = require("../controllers/inventoryController");
+// const router = express.Router();
+
+// router.post("/reserve", reserveStockController);
+
+// module.exports = router;
+
 const express = require("express");
 const { reserveStockController } = require("../controllers/inventoryController");
+
 const router = express.Router();
 
 router.post("/reserve", reserveStockController);

@@ -34,7 +34,7 @@ if(process.env.NODE_ENV === "production") {
 const recommendRoutes = require("./routes/recommendRoutes");
 app.use("/api/v1", recommendRoutes);
 const inventoryRoutes = require("./routes/inventoryRoutes");
-app.use("/api/v1/", inventoryRoutes);
+app.use("/api/v1/inventory", inventoryRoutes);
 const loyaltyRoutes = require("./routes/loyaltyRoutes");
 app.use("/api/v1/", loyaltyRoutes);
 const paymentAgentRoute = require("./routes/paymentAgentRoute");
@@ -45,8 +45,9 @@ app.use("/api/v1/fulfillment", fulfillmentRoutes);
 // ✅ FIXED: Proper mount for post-purchase
 const postPurchaseRoutes = require("./routes/postPurchaseRoutes");
 app.use("/api/v1/postpurchase", postPurchaseRoutes);
-// const salesAgentRoute = require("./routes/salesAgentRoute");
-// app.use("/api/v1/", salesAgentRoute);
+const salesRoutes = require("./routes/salesRoutes");
+app.use("/api/v1", salesRoutes);
+
 
 
 app.use(errorMiddleware)

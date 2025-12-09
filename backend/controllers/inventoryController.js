@@ -26,6 +26,38 @@
 //     res.json(result);
 //   },
 // };
+
+
+// const inventoryService = require("../services/inventoryService");
+
+// exports.reserveStockController = async (req, res) => {
+//   try {
+//     const { userId, items } = req.body;
+
+//     if (!userId || !items?.length) {
+//       return res.status(400).json({
+//         success: false,
+//         message: "userId and items are required"
+//       });
+//     }
+
+//     const result = await inventoryService.reserveStock(userId, items);
+
+//     if (!result.success) {
+//       return res.status(400).json(result);
+//     }
+
+//     res.status(200).json(result);
+
+//   } catch (error) {
+//     return res.status(500).json({
+//       success: false,
+//       message: error.message
+//     });
+//   }
+// };
+
+
 const inventoryService = require("../services/inventoryService");
 
 exports.reserveStockController = async (req, res) => {

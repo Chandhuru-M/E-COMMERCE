@@ -174,44 +174,59 @@
 //     }
 //   },
 // };
+// 
+const Reservation = require("../models/reservationModel");
 const Product = require("../models/productModel");
 
-async function reserveStock(userId, items) {
-  let reserved = [];
-
-  for (let it of items) {
-    const product = await Product.findById(it.productId);
-
-    if (!product) {
-      return {
-        success: false,
-        message: `Product with ID ${it.productId} not found in DB`
-      };
+/**
+ * Reserve stock before payment
+ * items = [{ productId, quantity }]
+ */
+exports.reserveStock = async (userId, items) => {
+  try {
+    if (!userId || !items?.length) {
+      return { success: false, message: "userId and items required" };
     }
 
-    if (product.stock < it.qty) {
-      return {
-        success: false,
-        message: `${product.name} is out of stock`
-      };
+    // 1️⃣ Check stock for each item
+    for (const item of items) {
+      const product = await Product.findById(item.productId);
+
+      if (!product) {
+        return { success: false, message: `Product not found: ${item.productId}` };
+      }
+
+      if (product.stock < item.quantity) {
+        return {
+          success: false,
+          message: `Insufficient stock for product ${product.name}`
+        };
+      }
     }
 
-    // Deduct stock
-    product.stock -= it.qty;
-    await product.save({ validateBeforeSave: false });
+    // 2️⃣ Reduce stock temporarily (reserve)
+    for (const item of items) {
+      await Product.findByIdAndUpdate(item.productId, {
+        $inc: { stock: -item.quantity }
+      });
+    }
 
-    reserved.push({
-      productId: product._id,
-      name: product.name,
-      qty: it.qty,
-      price: product.price,
-      remainingStock: product.stock
+    // 3️⃣ Create Reservation entry
+    const reservation = await Reservation.create({
+      user: userId,
+      items,
+      status: "reserved",
+      createdAt: new Date()
     });
+
+    return {
+      success: true,
+      message: "Stock reserved successfully",
+      reservationId: reservation._id,
+      reservation
+    };
+
+  } catch (error) {
+    return { success: false, message: error.message };
   }
-
-  return { success: true, reserved };
-}
-
-module.exports = {
-  reserveStock
 };
