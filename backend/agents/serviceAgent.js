@@ -29,8 +29,7 @@ const model = genAI.getGenerativeModel({
             sku: { type: "string", nullable: true },
             category: { type: "string", nullable: true },
             product: { type: "string", nullable: true }
-          },
-          additionalProperties: true
+          }
         },
         reply: {
           type: "string",
@@ -38,8 +37,7 @@ const model = genAI.getGenerativeModel({
           nullable: true
         }
       },
-      required: ["intent"],
-      additionalProperties: true
+      required: ["intent"]
     }
   }
 });
@@ -198,43 +196,50 @@ module.exports = {
         intent: parsedIntent.intent
       };
     } catch (error) {
-      // console.error("Service Agent Error Full Object:", JSON.stringify(error, null, 2));
+      console.error("Service Agent Error Full Object:", JSON.stringify(error, null, 2));
       console.error("Service Agent Error Message:", error.message);
 
-      // Fallback for Rate Limits (429) or any Gemini error
-      if (error.status === 429 || (error.message && error.message.includes("429")) || (error.message && error.message.includes("quota"))) {
-         console.log("ENTERING FALLBACK MODE due to 429/Quota error");
+      // ALWAYS ENTER FALLBACK MODE on error (429, 500, Network, etc.)
+      console.log("ENTERING FALLBACK MODE due to error");
          
-         // Simple keyword matching fallback
-         const lowerMsg = message.toLowerCase();
-         let fallbackQuery = message;
+      // Simple keyword matching fallback
+      const lowerMsg = message.toLowerCase();
+      let fallbackQuery = message;
 
-         // Extract better search terms
-         if (lowerMsg.includes("laptop")) fallbackQuery = "laptop";
-         else if (lowerMsg.includes("phone") || lowerMsg.includes("mobile")) fallbackQuery = "phone";
-         else if (lowerMsg.includes("headphone")) fallbackQuery = "headphone";
-         else if (lowerMsg.includes("watch")) fallbackQuery = "watch";
-         else if (lowerMsg.includes("camera")) fallbackQuery = "camera";
-         else {
-            // Remove common stop words to get a cleaner query
-            fallbackQuery = lowerMsg.replace(/show|me|buy|recommend|i|want|looking|for|a|an|the|please/g, "").trim();
-         }
-
-         if (fallbackQuery.length > 0) {
-             const products = await recommendationAgent.getRecommendations(fallbackQuery, mockUserHistory);
-             return {
-                 reply: "I'm currently experiencing high traffic on my AI brain, but I found these products for you from our catalog:",
-                 data: { products },
-                 intent: "RECOMMENDATION_AGENT"
-             };
-         }
-         return { reply: "I'm currently experiencing very high traffic. Please try again in about a minute." };
+      // Extract better search terms
+      if (lowerMsg.includes("laptop")) fallbackQuery = "laptop";
+      else if (lowerMsg.includes("phone") || lowerMsg.includes("mobile")) fallbackQuery = "phone";
+      else if (lowerMsg.includes("headphone")) fallbackQuery = "headphone";
+      else if (lowerMsg.includes("watch")) fallbackQuery = "watch";
+      else if (lowerMsg.includes("camera")) fallbackQuery = "camera";
+      else {
+        // Remove common stop words to get a cleaner query
+        fallbackQuery = lowerMsg.replace(/show|me|buy|recommend|i|want|looking|for|a|an|the|please|hi|hello|hey/g, "").trim();
       }
 
-      return {
-        reply:
-          "I'm currently experiencing high traffic. Please try again in a moment."
-      };
+      // If query is empty (e.g. just "hi"), give a generic welcome
+      if (fallbackQuery.length === 0) {
+          return { reply: "Hello! I'm currently operating in offline mode due to high traffic. I can still help you find products. Try searching for 'laptops', 'phones', or specific items!" };
+      }
+
+      if (fallbackQuery.length > 0) {
+          try {
+            const products = await recommendationAgent.getRecommendations(fallbackQuery, mockUserHistory);
+            if (products && products.length > 0) {
+                return {
+                    reply: "I'm currently experiencing high traffic on my AI brain, but I found these products for you from our catalog:",
+                    data: { products },
+                    intent: "RECOMMENDATION_AGENT"
+                };
+            } else {
+                return { reply: `I'm currently offline and couldn't find any products matching "${fallbackQuery}" in our catalog. Please try a different search term.` };
+            }
+          } catch (dbError) {
+              console.error("Fallback DB Error:", dbError);
+          }
+      }
+      
+      return { reply: "I'm currently experiencing high traffic. Please try again in a moment." };
     }
   }
 };
