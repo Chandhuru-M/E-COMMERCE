@@ -206,6 +206,7 @@ module.exports = {
       const lowerMsg = message.toLowerCase();
       let fallbackQuery = message;
 
+      
       // Extract better search terms
       if (lowerMsg.includes("laptop")) fallbackQuery = "laptop";
       else if (lowerMsg.includes("phone") || lowerMsg.includes("mobile")) fallbackQuery = "phone";
