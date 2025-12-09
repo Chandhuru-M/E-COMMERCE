@@ -1,20 +1,33 @@
-const products = require("../mock/products.json");
+const Product = require("../models/productModel");
 const axios = require("axios");
+const mongoose = require("mongoose");
 
 module.exports = {
   checkInventory: async (sku) => {
     // 1. Check your local DB first
-    const product = products.find(p => p.sku === sku);
+    let product = null;
+    
+    try {
+        if (mongoose.isValidObjectId(sku)) {
+            product = await Product.findById(sku);
+        } else {
+            // Search by name if not an ID
+            const regex = new RegExp(sku, 'i');
+            product = await Product.findOne({ name: regex });
+        }
+    } catch (err) {
+        console.error("Error checking inventory in DB:", err);
+    }
 
     if (product) {
       return {
         found: true,
-        product,
+        product: product.toObject(),
         stock: product.stock,
         deliveryAvailable: product.stock > 0,
         message: product.stock > 0
-          ? "Item available for online delivery."
-          : "Out of stock online."
+          ? `Item "${product.name}" is available for online delivery. Stock: ${product.stock}`
+          : `Item "${product.name}" is currently out of stock online.`
       };
     }
 

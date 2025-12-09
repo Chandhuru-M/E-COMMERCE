@@ -1,4 +1,5 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Product = require("../models/productModel");
 
 // Load Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -71,7 +72,7 @@ module.exports = {
 
       switch (parsedIntent.intent) {
         case "RECOMMENDATION_AGENT":
-          const products = recommendationAgent.getRecommendations(parsedIntent.parameters.query || message, mockUserHistory);
+          const products = await recommendationAgent.getRecommendations(parsedIntent.parameters.query || message, mockUserHistory);
           agentResponse = { products };
           
           if (products.length > 0) {
@@ -97,12 +98,23 @@ module.exports = {
 
         case "LOYALTY_AGENT":
           // We need a product to apply offers to, but if it's general, we just explain the program.
-          // For now, let's just give a general loyalty message or simulate a check on a dummy product if they asked about a specific one.
           if (parsedIntent.parameters.query) {
-             // Mock a product for calculation if they mentioned one
-             const mockProduct = { price: 1000, name: parsedIntent.parameters.query }; 
-             const offer = loyaltyAgent.applyLoyaltyAndOffers(mockUserHistory, mockProduct, null);
-             finalReply = `Good news! As a ${mockUserHistory.tier} member, you can get a discount. ${offer.message || "Special pricing available!"}`;
+             // Try to find the real product
+             const regex = new RegExp(parsedIntent.parameters.query, 'i');
+             let productToUse = null;
+             try {
+                const realProduct = await Product.findOne({ name: regex });
+                if (realProduct) productToUse = realProduct.toObject();
+             } catch (e) { console.error("Loyalty product lookup failed", e); }
+
+             // Fallback if not found
+             if (!productToUse) {
+                productToUse = { price: 1000, name: parsedIntent.parameters.query };
+             }
+
+             const offer = loyaltyAgent.applyLoyaltyAndOffers(mockUserHistory, productToUse, null);
+             agentResponse = { offer };
+             finalReply = `Good news! As a ${mockUserHistory.tier} member, you can get a discount on ${productToUse.name}. ${offer.message || "Special pricing available!"}`;
           } else {
              finalReply = `You are currently a ${mockUserHistory.tier} member with ${mockUserHistory.loyaltyPoints} points. You can redeem these for discounts on your next purchase!`;
           }
@@ -111,6 +123,7 @@ module.exports = {
         case "FULFILLMENT_AGENT":
           // Mock an order for delivery estimation
           const deliveryInfo = fulfillmentAgent.scheduleDelivery({ orderId: "Current Session" });
+          agentResponse = { deliveryInfo };
           finalReply = `We can get that to you quickly! ${deliveryInfo.message}`;
           break;
 
@@ -128,16 +141,30 @@ module.exports = {
       };
 
     } catch (error) {
-      console.error("Service Agent Error Full Object:", JSON.stringify(error, null, 2));
+      // console.error("Service Agent Error Full Object:", JSON.stringify(error, null, 2));
       console.error("Service Agent Error Message:", error.message);
       
       // Fallback for Rate Limits (429) or any Gemini error
       if (error.status === 429 || (error.message && error.message.includes("429")) || (error.message && error.message.includes("quota"))) {
          console.log("ENTERING FALLBACK MODE due to 429/Quota error");
+         
          // Simple keyword matching fallback
          const lowerMsg = message.toLowerCase();
-         if (lowerMsg.includes("laptop") || lowerMsg.includes("phone") || lowerMsg.includes("buy") || lowerMsg.includes("show") || lowerMsg.includes("recommend")) {
-             const products = recommendationAgent.getRecommendations(message, mockUserHistory);
+         let fallbackQuery = message;
+
+         // Extract better search terms
+         if (lowerMsg.includes("laptop")) fallbackQuery = "laptop";
+         else if (lowerMsg.includes("phone") || lowerMsg.includes("mobile")) fallbackQuery = "phone";
+         else if (lowerMsg.includes("headphone")) fallbackQuery = "headphone";
+         else if (lowerMsg.includes("watch")) fallbackQuery = "watch";
+         else if (lowerMsg.includes("camera")) fallbackQuery = "camera";
+         else {
+            // Remove common stop words to get a cleaner query
+            fallbackQuery = lowerMsg.replace(/show|me|buy|recommend|i|want|looking|for|a|an|the|please/g, "").trim();
+         }
+
+         if (fallbackQuery.length > 0) {
+             const products = await recommendationAgent.getRecommendations(fallbackQuery, mockUserHistory);
              return {
                  reply: "I'm currently experiencing high traffic on my AI brain, but I found these products for you from our catalog:",
                  data: { products },

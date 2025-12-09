@@ -74,6 +74,32 @@ export default function ChatAssistant() {
                     ))}
                   </div>
                 )}
+
+                {/* Inventory Info */}
+                {msg.data && msg.data.stockInfo && (
+                  <div className="chat-info-card">
+                    <p><strong>Status:</strong> {msg.data.stockInfo.message}</p>
+                    {msg.data.stockInfo.product && (
+                       <p>Stock: {msg.data.stockInfo.stock} units</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Loyalty Offer Info */}
+                {msg.data && msg.data.offer && (
+                  <div className="chat-info-card">
+                    <p><strong>Original Price:</strong> ₹{msg.data.offer.originalPrice}</p>
+                    <p><strong>Final Price:</strong> ₹{msg.data.offer.finalPrice}</p>
+                    <p className="savings">You Save: ₹{msg.data.offer.savings}</p>
+                  </div>
+                )}
+
+                {/* Delivery Info */}
+                {msg.data && msg.data.deliveryInfo && (
+                  <div className="chat-info-card">
+                    <p><strong>Estimated Delivery:</strong> {msg.data.deliveryInfo.deliveryDate}</p>
+                  </div>
+                )}
               </div>
             ))}
           </div>
