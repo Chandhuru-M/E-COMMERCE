@@ -17,25 +17,22 @@
 //   }
 // };
 const Order = require("../models/orderModel");
+const postPurchaseAgent = require("./postPurchaseAgent");
 
 module.exports = {
+  // Step 1: When user places order
   scheduleDelivery: async (orderId) => {
     const order = await Order.findById(orderId);
+    if (!order) return { error: "Order not found" };
 
-    if (!order) {
-      return { error: "Order not found" };
-    }
-
-    // 1️⃣ Set processing status
     order.deliveryStatus = "Processing";
 
-    // 2️⃣ Calculate estimated delivery date (3–5 days)
+    // Estimate delivery 3–5 days
     let daysToAdd = Math.floor(Math.random() * 3) + 3;
     const estimatedDate = new Date();
     estimatedDate.setDate(estimatedDate.getDate() + daysToAdd);
 
     order.estimatedDelivery = estimatedDate;
-
     await order.save();
 
     return {
@@ -46,13 +43,18 @@ module.exports = {
     };
   },
 
+  // Step 2: When system updates shipment status
   updateDeliveryStatus: async (orderId, status) => {
     const order = await Order.findById(orderId);
-
     if (!order) return { error: "Order not found" };
 
     order.deliveryStatus = status;
     await order.save();
+
+    // ✅ Auto trigger PostPurchaseAgent when delivered
+    if (status === "Delivered") {
+      await postPurchaseAgent.trigger(orderId);
+    }
 
     return {
       success: true,
@@ -61,21 +63,32 @@ module.exports = {
     };
   },
 
+  // Step 3: Chatbot / UI compatible tracking
+  getTrackingInfo: async (orderId) => {
+    const order = await Order.findById(orderId);
+    if (!order) return { error: "Order not found" };
+
+    return {
+      orderId: order._id,
+      deliveryStatus: order.deliveryStatus,
+      estimatedDelivery: order.estimatedDelivery
+    };
+  },
+
+  // Step 4: Background processing
   processOrder: async (orderId) => {
     try {
-        const order = await Order.findById(orderId);
-        if (!order) return;
+      const order = await Order.findById(orderId);
+      if (!order) return false;
 
-        // Simulate processing delay
-        order.orderStatus = 'Processing';
-        await order.save();
-        
-        console.log(`Order ${orderId} is being processed by Fulfillment Agent.`);
-        return true;
+      order.orderStatus = "Processing";
+      await order.save();
+
+      console.log(`Order ${orderId} processed by Fulfillment Agent.`);
+      return true;
     } catch (error) {
-        console.error("Fulfillment Agent Error:", error);
-        return false;
+      console.error("Fulfillment Agent Error:", error);
+      return false;
     }
   }
 };
-

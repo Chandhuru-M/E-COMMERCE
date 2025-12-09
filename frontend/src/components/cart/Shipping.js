@@ -25,12 +25,12 @@ export const validateShipping = (shippingInfo, navigate) => {
 export default function Shipping() {
     const {shippingInfo={} } = useSelector(state => state.cartState)
 
-    const [address, setAddress] = useState(shippingInfo.address);
-    const [city, setCity] = useState(shippingInfo.city);
-    const [phoneNo, setPhoneNo] = useState(shippingInfo.phoneNo);
-    const [postalCode, setPostalCode] = useState(shippingInfo.postalCode);
-    const [country, setCountry] = useState(shippingInfo.country);
-    const [state, setState] = useState(shippingInfo.state);
+    const [address, setAddress] = useState(shippingInfo.address || '');
+    const [city, setCity] = useState(shippingInfo.city || '');
+    const [phoneNo, setPhoneNo] = useState(shippingInfo.phoneNo || '');
+    const [postalCode, setPostalCode] = useState(shippingInfo.postalCode || '');
+    const [country, setCountry] = useState(shippingInfo.country || '');
+    const [state, setState] = useState(shippingInfo.state || '');
     const countryList =  Object.values(countries);
     const dispatch = useDispatch();
     const navigate = useNavigate();

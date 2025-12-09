@@ -283,7 +283,7 @@ export default function Payment() {
         "/api/v1/start-payment",
         {
           amount: finalPayable, // backend will convert to smallest unit
-          currency: "inr",
+          currency: "usd",
           user: user || null,
           orderDetails: {
             productName: cartItems[0]?.name || "Order Items",

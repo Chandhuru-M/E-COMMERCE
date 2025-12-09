@@ -17,21 +17,25 @@ const router = express.Router();
 const fulfillmentAgent = require("../agents/fulfillmentAgent");
 const { isAuthenticatedUser } = require("../middlewares/authenticate");
 
-// Schedule delivery after payment success
+// After payment
 router.post("/schedule-delivery", isAuthenticatedUser, async (req, res) => {
   const { orderId } = req.body;
-
   const response = await fulfillmentAgent.scheduleDelivery(orderId);
   res.json(response);
 });
 
-// Update tracking
+// Update delivery status (admin/system)
 router.post("/update-delivery", async (req, res) => {
   const { orderId, status } = req.body;
-
   const response = await fulfillmentAgent.updateDeliveryStatus(orderId, status);
   res.json(response);
 });
 
-module.exports = router;
+// Track order (UI + chatbot compatible)
+router.get("/track/:orderId", async (req, res) => {
+  const { orderId } = req.params;
+  const response = await fulfillmentAgent.getTrackingInfo(orderId);
+  res.json(response);
+});
 
+module.exports = router;

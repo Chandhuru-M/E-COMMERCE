@@ -87,8 +87,8 @@ export default function ProductDetail () {
                 <div className="row f-flex justify-content-around">
                     <div className="col-12 col-lg-5 img-fluid" id="product_image">
                         <Carousel pause="hover">
-                            {product.images && product.images.length > 0 && product.images.map(image =>
-                                <Carousel.Item key={image._id}>
+                            {product.images && product.images.length > 0 && product.images.map((image, idx) =>
+                                <Carousel.Item key={image._id || image.image || idx}>
                                     <img className="d-block w-100"  src={image.image} alt={product.name} height="500" width="500" />
                                 </Carousel.Item>
                             )}
@@ -156,6 +156,7 @@ export default function ProductDetail () {
                                         {
                                             [1,2,3,4,5].map(star => (
                                                 <li 
+                                                key={`star-${star}`}
                                                 value={star}
                                                 onClick={()=>setRating(star)}
                                                 className={`star ${star<=rating?'orange':''}`}

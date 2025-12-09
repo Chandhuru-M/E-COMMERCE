@@ -40,9 +40,14 @@ app.use("/api/v1/", loyaltyRoutes);
 const paymentAgentRoute = require("./routes/paymentAgentRoute");
 app.use("/api/v1/", paymentAgentRoute);
 const fulfillmentRoutes = require("./routes/fulfillmentRoutes");
-app.use("/api/v1/", fulfillmentRoutes);
+app.use("/api/v1/fulfillment", fulfillmentRoutes);
+
+// ✅ FIXED: Proper mount for post-purchase
+const postPurchaseRoutes = require("./routes/postPurchaseRoutes");
+app.use("/api/v1/postpurchase", postPurchaseRoutes);
 // const salesAgentRoute = require("./routes/salesAgentRoute");
 // app.use("/api/v1/", salesAgentRoute);
+
 
 app.use(errorMiddleware)
 
