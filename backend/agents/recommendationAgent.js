@@ -1,46 +1,51 @@
 const Product = require("../models/productModel");
-const trending = require("../mock/trending.json");
 
 module.exports = {
   getRecommendations: async (query, userHistory) => {
     const q = query.toLowerCase();
 
-    try {
-      // Find products in DB where name, category or description matches query
-      // Using regex for case-insensitive partial match
-      const regex = new RegExp(q, 'i');
-      
-      let results = await Product.find({
-          $or: [
-              { name: regex },
-              { category: regex },
-              { description: regex }
-          ]
-      });
+    // 🔍 1. Fetch relevant products from DB
+    const products = await Product.find({
+      $or: [
+        { name: { $regex: q, $options: "i" } },
+        { category: { $regex: q, $options: "i" } }
+      ]
+    });
 
-      // Score using trends + history
-      const scored = results.map(product => {
-        let score = 0;
-        const p = product.toObject(); // Convert to plain object
-
-        // user history boost
-        if (userHistory?.favCategories?.includes(p.category)) score += 0.4;
-        if (p.color && userHistory?.favColors?.includes(p.color)) score += 0.3;
-
-        // trending boost
-        if (trending.trendingCategories.includes(p.category)) score += 0.3;
-        if (p.color && trending.trendingColors.includes(p.color)) score += 0.2;
-
-        return { ...p, score };
-      });
-
-      scored.sort((a, b) => b.score - a.score);
-
-      // return only top 5
-      return scored.slice(0, 5);
-    } catch (error) {
-      console.error("Error fetching recommendations from DB:", error);
+    // No products found
+    if (!products.length) {
       return [];
     }
+
+    // 🎯 2. Apply scoring (AI-like logic)
+    const scored = products.map(product => {
+      let score = 0;
+
+      // User preference boost
+      if (userHistory?.favCategories?.includes(product.category))
+        score += 0.4;
+
+      if (userHistory?.favColors?.includes(product.color))
+        score += 0.3;
+
+      // Trend boost (optional static example)
+      const trendingCategories = ["watch", "tshirt", "shoes"];
+      const trendingColors = ["black", "blue", "white"];
+
+      if (trendingCategories.includes(product.category.toLowerCase()))
+        score += 0.2;
+
+      if (trendingColors.includes(product.color?.toLowerCase()))
+        score += 0.1;
+
+      return { product, score };
+    });
+
+    // Sort by score
+    scored.sort((a, b) => b.score - a.score);
+
+    // Return only top 5
+    return scored.slice(0, 5).map(item => item.product);
   }
 };
+

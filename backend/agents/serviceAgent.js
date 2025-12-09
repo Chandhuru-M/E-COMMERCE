@@ -2,6 +2,7 @@
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Product = require("../models/productModel");
+const Order = require("../models/orderModel"); // Import Order model
 
 // Load Gemini API
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -47,6 +48,7 @@ const recommendationAgent = require("./recommendationAgent");
 const inventoryAgent = require("./inventoryAgent");
 const loyaltyAgent = require("./loyaltyAgent");
 const fulfillmentAgent = require("./fulfillmentAgent");
+const paymentAgent = require("./paymentAgent");
 
 // Mock user history for now (in a real app, fetch from DB)
 const mockUserHistory = {
@@ -69,13 +71,14 @@ module.exports = {
         - INVENTORY_AGENT: Use this when the user asks about stock availability of a specific product (SKU or name).
         - LOYALTY_AGENT: Use this when the user asks about discounts, loyalty points, or offers.
         - FULFILLMENT_AGENT: Use this when the user asks about shipping, delivery times, or order tracking.
+        - PAYMENT_AGENT: Use this when the user explicitly says they want to "buy", "purchase", or "checkout" a specific product.
         - GENERAL_CHAT: Use this for greetings, small talk, or questions not covered above.
 
         User Message: "${message}"
 
         You MUST respond ONLY with a JSON object matching this TypeScript type:
         {
-          intent: "RECOMMENDATION_AGENT" | "INVENTORY_AGENT" | "LOYALTY_AGENT" | "FULFILLMENT_AGENT" | "GENERAL_CHAT",
+          intent: "RECOMMENDATION_AGENT" | "INVENTORY_AGENT" | "LOYALTY_AGENT" | "FULFILLMENT_AGENT" | "PAYMENT_AGENT" | "GENERAL_CHAT",
           parameters: {
             query?: string;
             sku?: string;
@@ -165,19 +168,67 @@ module.exports = {
                 productToUse = { price: 1000, name: parsedIntent.parameters.query };
              }
 
-             const offer = loyaltyAgent.applyLoyaltyAndOffers(mockUserHistory, productToUse, null);
-             agentResponse = { offer };
-             finalReply = `Good news! As a ${mockUserHistory.tier} member, you can get a discount on ${productToUse.name}. ${offer.message || "Special pricing available!"}`;
+             if (userContext && userContext._id) {
+                 const offer = await loyaltyAgent.applyLoyaltyAndOffers(userContext._id, productToUse, null);
+                 agentResponse = { offer };
+                 finalReply = `Good news! As a loyal member, you can get a discount on ${productToUse.name}. ${offer.message || "Special pricing available!"}`;
+             } else {
+                 finalReply = "Please log in to check your loyalty points and exclusive offers.";
+             }
           } else {
-            finalReply = `You are currently a ${mockUserHistory.tier} member with ${mockUserHistory.loyaltyPoints} points. You can redeem these for discounts on your next purchase!`;
+             if (userContext && userContext._id) {
+                 // Just check points
+                 // We might need a specific method for this in loyaltyAgent, or just use applyLoyaltyAndOffers with a dummy product
+                 const dummyProduct = { price: 0, name: "Check" };
+                 const offer = await loyaltyAgent.applyLoyaltyAndOffers(userContext._id, dummyProduct, null);
+                 finalReply = `You currently have ${offer.updatedLoyalty || 0} loyalty points.`;
+             } else {
+                 finalReply = "Our loyalty program offers great rewards! Log in to see your status.";
+             }
           }
           break;
 
         case "FULFILLMENT_AGENT":
-          // Mock an order for delivery estimation
-          const deliveryInfo = fulfillmentAgent.scheduleDelivery({ orderId: "Current Session" });
-          agentResponse = { deliveryInfo };
-          finalReply = `We can get that to you quickly! ${deliveryInfo.message}`;
+          if (userContext && userContext._id) {
+              // Find the last order for this user
+              const lastOrder = await Order.findOne({ user: userContext._id }).sort({ createdAt: -1 });
+              
+              if (lastOrder) {
+                  const deliveryInfo = await fulfillmentAgent.scheduleDelivery(lastOrder._id);
+                  agentResponse = { deliveryInfo };
+                  finalReply = `Regarding your order #${lastOrder._id}: ${deliveryInfo.message}`;
+              } else {
+                  finalReply = "I couldn't find any recent orders for your account.";
+              }
+          } else {
+              finalReply = "Please log in so I can check your order status.";
+          }
+          break;
+
+        case "PAYMENT_AGENT":
+          if (parsedIntent.parameters.product || parsedIntent.parameters.query) {
+             const productName = parsedIntent.parameters.product || parsedIntent.parameters.query;
+             // Try to find the product to get price
+             const regex = new RegExp(productName, 'i');
+             const productToBuy = await Product.findOne({ name: regex });
+             
+             if (productToBuy) {
+                 // Initiate payment logic (mock or real)
+                 // We pass a dummy amount if we don't have a cart context, or use product price
+                 const paymentResult = await paymentAgent.processPayment(productToBuy.price, "usd", userContext, { orderId: "TEMP", productName: productToBuy.name });
+                 
+                 if (paymentResult.success) {
+                     agentResponse = { payment: paymentResult };
+                     finalReply = `Great choice! I've prepared the secure checkout for ${productToBuy.name} (Price: $${productToBuy.price}). You can proceed with the payment.`;
+                 } else {
+                     finalReply = "I encountered an issue setting up the payment. Please try adding it to your cart manually.";
+                 }
+             } else {
+                 finalReply = "I couldn't find that specific product to checkout. Could you confirm the name?";
+             }
+          } else {
+              finalReply = "What product would you like to buy?";
+          }
           break;
 
         case "GENERAL_CHAT":
