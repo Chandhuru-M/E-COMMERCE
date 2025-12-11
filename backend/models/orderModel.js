@@ -1,129 +1,222 @@
+// const mongoose = require('mongoose');
+
+// const orderSchema = mongoose.Schema({
+//     shippingInfo: {
+//         address: {
+//             type: String,
+//             required: true
+//         },
+//         country: {
+//             type: String,
+//             required: true
+//         },
+//         city: {
+//             type: String,
+//             required: true
+//         },
+//         phoneNo: {
+//             type: String,
+//             required: true
+//         },
+//         postalCode: {
+//             type: String,
+//             required: true
+//         }
+        
+//     },
+//     user: {
+//         type: mongoose.SchemaTypes.ObjectId,
+//         required: true,
+//         ref: 'User'
+//     },
+//     orderItems: [{
+//         name: {
+//             type: String,
+//             required: true
+//         },
+//         quantity: {
+//             type: Number,
+//             required: true
+//         },
+//         image: {
+//             type: String,
+//             required: true
+//         },
+//         price: {
+//             type: Number,
+//             required: true
+//         },
+//         product: {
+//             type: mongoose.SchemaTypes.ObjectId,
+//             required: true,
+//             ref: 'Product'
+//         }
+
+//     }],
+//     itemsPrice: {
+//         type: Number,
+//         required: true,
+//         default: 0.0
+//     },
+//     taxPrice: {
+//         type: Number,
+//         required: true,
+//         default: 0.0
+//     },
+//     shippingPrice: {
+//         type: Number,
+//         required: true,
+//         default: 0.0
+//     },
+//     totalPrice: {
+//         type: Number,
+//         required: true,
+//         default: 0.0
+//     },
+//     paymentInfo: {
+//         id: {
+//             type: String,
+//             required: true
+//         },
+//         status: {
+//             type: String,
+//             required: true
+//         }
+//     },
+//     paidAt: {
+//         type: Date
+//     },
+//     deliveredAt: {
+//         type: Date
+//     },
+//     orderStatus: {
+//         type: String,
+//         required: true,
+//         default: 'Processing'
+//     },
+//     createdAt: {
+//         type: Date,
+//         default: Date.now
+//     },loyalty: {
+//   appliedPoints: { type: Number, default: 0 },
+//   earnedPoints: { type: Number, default: 0 }
+// },
+//     deliveryStatus: {
+//         type: String,
+//         enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered"],
+//         default: "Pending"
+//     },
+//     estimatedDelivery: Date,
+//     postPurchaseStatus: {
+//         type: String,
+//         enum: ["Pending Feedback", "Completed", "Issue Raised"],
+//         default: "Pending Feedback"
+//     },
+//     feedback: {
+//         rating: { type: Number, min: 1, max: 5 },
+//         comment: String,
+//         submittedAt: { type: Date, default: Date.now }
+//     },
+//     issue: {
+//         issueType: { type: String, enum: ["Return", "Refund", "Complaint", "Defect", "Other"] },
+//         description: String,
+//         raisedAt: { type: Date, default: Date.now },
+//         status: { type: String, enum: ["Pending", "In Progress", "Resolved"], default: "Pending" }
+//     }
+// })
+
+// let orderModel = mongoose.model('Order', orderSchema);
+
+// module.exports = orderModel;
 const mongoose = require('mongoose');
 
 const orderSchema = mongoose.Schema({
     shippingInfo: {
-        address: {
-            type: String,
-            required: true
-        },
-        country: {
-            type: String,
-            required: true
-        },
-        city: {
-            type: String,
-            required: true
-        },
-        phoneNo: {
-            type: String,
-            required: true
-        },
-        postalCode: {
-            type: String,
-            required: true
-        }
-        
+        address: { type: String, required: true },
+        country: { type: String, required: true },
+        city: { type: String, required: true },
+        phoneNo: { type: String, required: true },
+        postalCode: { type: String, required: true }
     },
+
     user: {
         type: mongoose.SchemaTypes.ObjectId,
         required: true,
         ref: 'User'
     },
-    orderItems: [{
-        name: {
-            type: String,
-            required: true
-        },
-        quantity: {
-            type: Number,
-            required: true
-        },
-        image: {
-            type: String,
-            required: true
-        },
-        price: {
-            type: Number,
-            required: true
-        },
-        product: {
-            type: mongoose.SchemaTypes.ObjectId,
-            required: true,
-            ref: 'Product'
-        }
 
+    orderItems: [{
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true },
+        image: { type: String, required: true },
+        price: { type: Number, required: true },
+        product: { type: mongoose.SchemaTypes.ObjectId, required: true, ref: 'Product' }
     }],
-    itemsPrice: {
-        type: Number,
-        required: true,
-        default: 0.0
-    },
-    taxPrice: {
-        type: Number,
-        required: true,
-        default: 0.0
-    },
-    shippingPrice: {
-        type: Number,
-        required: true,
-        default: 0.0
-    },
-    totalPrice: {
-        type: Number,
-        required: true,
-        default: 0.0
-    },
+
+    itemsPrice: { type: Number, required: true, default: 0.0 },
+    taxPrice: { type: Number, required: true, default: 0.0 },
+    shippingPrice: { type: Number, required: true, default: 0.0 },
+    totalPrice: { type: Number, required: true, default: 0.0 },
+
     paymentInfo: {
-        id: {
-            type: String,
-            required: true
-        },
-        status: {
-            type: String,
-            required: true
-        }
+        id: { type: String, required: true },
+        status: { type: String, required: true }
     },
-    paidAt: {
-        type: Date
-    },
-    deliveredAt: {
-        type: Date
-    },
-    orderStatus: {
-        type: String,
-        required: true,
-        default: 'Processing'
-    },
+
+    paidAt: Date,
+    deliveredAt: Date,
+
+    orderStatus: { type: String, required: true, default: 'Processing' },
+
     createdAt: {
         type: Date,
         default: Date.now
-    },loyalty: {
-  appliedPoints: { type: Number, default: 0 },
-  earnedPoints: { type: Number, default: 0 }
-},
+    },
+
+    loyalty: {
+        appliedPoints: { type: Number, default: 0 },
+        earnedPoints: { type: Number, default: 0 }
+    },
+
+    // -------------------------
+    // DELIVERY / FULFILLMENT
+    // -------------------------
     deliveryStatus: {
         type: String,
         enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered"],
         default: "Pending"
     },
+
     estimatedDelivery: Date,
-    postPurchaseStatus: {
+
+    trackingUrl: { type: String, default: null },
+    trackingId: { type: String, default: null },
+    fulfillmentPartner: { type: String, default: null },
+
+    // -------------------------
+    // Return / Issue System
+    // -------------------------
+    returnRequested: { type: Boolean, default: false },
+    returnReason: { type: String, default: null },
+    returnStatus: {
         type: String,
-        enum: ["Pending Feedback", "Completed", "Issue Raised"],
-        default: "Pending Feedback"
+        enum: ["None", "Requested", "Approved", "Rejected", "Completed"],
+        default: "None"
+    },
+
+    issueType: { type: String, default: null },
+    issueDescription: { type: String, default: null },
+    issueStatus: {
+        type: String,
+        enum: ["None", "Open", "Resolved"],
+        default: "None"
     },
     feedback: {
-        rating: { type: Number, min: 1, max: 5 },
-        comment: String,
-        submittedAt: { type: Date, default: Date.now }
-    },
-    issue: {
-        issueType: { type: String, enum: ["Return", "Refund", "Complaint", "Defect", "Other"] },
-        description: String,
-        raisedAt: { type: Date, default: Date.now },
-        status: { type: String, enum: ["Pending", "In Progress", "Resolved"], default: "Pending" }
+        rating: { type: Number, default: null },
+        comment: { type: String, default: null },
+        submittedAt: { type: Date, default: null }
     }
-})
+});
 
 let orderModel = mongoose.model('Order', orderSchema);
 
