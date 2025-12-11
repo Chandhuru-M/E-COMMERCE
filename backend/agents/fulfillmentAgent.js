@@ -23,7 +23,7 @@ module.exports = {
   // Step 1: When user places order
   scheduleDelivery: async (orderId) => {
     const order = await Order.findById(orderId);
-    if (!order) return { error: "Order not found" };
+    if (!order) return { success: false, error: `Order not found: ${orderId}. Please create the order first.` };
 
     order.deliveryStatus = "Processing";
 

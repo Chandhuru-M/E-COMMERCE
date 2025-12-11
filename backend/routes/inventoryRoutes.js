@@ -19,10 +19,14 @@
 // module.exports = router;
 
 const express = require("express");
-const { reserveStockController } = require("../controllers/inventoryController");
+const { reserveStock, confirmInventory } = require("../controllers/inventoryController");
 
 const router = express.Router();
 
-router.post("/reserve", reserveStockController);
+// Reserve stock before payment
+router.post("/reserve", reserveStock);
+
+// Confirm reservation after payment
+router.post("/confirm", confirmInventory);
 
 module.exports = router;

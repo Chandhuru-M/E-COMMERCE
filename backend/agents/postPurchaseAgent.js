@@ -4,7 +4,7 @@ module.exports = {
   // Auto triggered after delivery
   trigger: async (orderId) => {
     const order = await Order.findById(orderId);
-    if (!order) return { error: "Order not found" };
+    if (!order) return { success: false, error: `Order not found: ${orderId}. Please create the order first.` };
 
     order.postPurchaseStatus = "Pending Feedback";
     await order.save();

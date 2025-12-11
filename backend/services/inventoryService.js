@@ -230,3 +230,32 @@ exports.reserveStock = async (userId, items) => {
     return { success: false, message: error.message };
   }
 };
+
+/**
+ * Confirm reservation after payment
+ */
+exports.confirmReservation = async (reservationId, orderId) => {
+  try {
+    const reservation = await Reservation.findById(reservationId);
+    
+    if (!reservation) {
+      return { success: false, message: "Reservation not found" };
+    }
+
+    if (reservation.status === "confirmed") {
+      return { success: true, message: "Already confirmed" };
+    }
+
+    reservation.status = "confirmed";
+    reservation.orderId = orderId;
+    await reservation.save();
+
+    return {
+      success: true,
+      message: "Inventory confirmed successfully"
+    };
+
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};

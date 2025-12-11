@@ -70,8 +70,67 @@ function calculateEarnedPoints(totalPayable) {
   return Math.floor(totalPayable / 10);
 }
 
+/**
+ * Finalize loyalty after payment (deduct used points, award earned points)
+ */
+async function finalizeLoyalty({ orderId, pointsUsed }) {
+  try {
+    const User = require('../models/userModel');
+    const Order = require('../models/orderModel');
+
+    const order = await Order.findById(orderId).lean();
+    if (!order) {
+      return { success: false, message: `Order not found: ${orderId}. Please create the order first.` };
+    }
+
+    const user = await User.findById(order.user);
+    if (!user) {
+      return { success: false, message: "User not found" };
+    }
+
+    // Deduct used points
+    if (pointsUsed > 0) {
+      user.loyaltyPoints = Math.max(0, (user.loyaltyPoints || 0) - pointsUsed);
+      if (!user.loyaltyHistory) user.loyaltyHistory = [];
+      user.loyaltyHistory.push({
+        type: 'redeem',
+        points: -pointsUsed,
+        orderId: order._id,
+        note: `Redeemed for order ${order._id}`
+      });
+    }
+
+    // Award earned points
+    const earnedPoints = calculateEarnedPoints(order.totalPrice);
+    if (earnedPoints > 0) {
+      user.loyaltyPoints = (user.loyaltyPoints || 0) + earnedPoints;
+      if (!user.loyaltyHistory) user.loyaltyHistory = [];
+      user.loyaltyHistory.push({
+        type: 'earn',
+        points: earnedPoints,
+        orderId: order._id,
+        note: `Earned from order ${order._id}`
+      });
+    }
+
+    await user.save();
+
+    return {
+      success: true,
+      message: "Loyalty points finalized",
+      pointsDeducted: pointsUsed,
+      pointsEarned: earnedPoints,
+      newBalance: user.loyaltyPoints
+    };
+
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+}
+
 module.exports = {
   calculatePromotions,
   computeLoyaltyAndTotals,
-  calculateEarnedPoints
+  calculateEarnedPoints,
+  finalizeLoyalty
 };

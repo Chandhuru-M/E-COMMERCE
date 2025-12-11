@@ -106,7 +106,23 @@ const orderSchema = mongoose.Schema({
         enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered"],
         default: "Pending"
     },
-    estimatedDelivery: Date
+    estimatedDelivery: Date,
+    postPurchaseStatus: {
+        type: String,
+        enum: ["Pending Feedback", "Completed", "Issue Raised"],
+        default: "Pending Feedback"
+    },
+    feedback: {
+        rating: { type: Number, min: 1, max: 5 },
+        comment: String,
+        submittedAt: { type: Date, default: Date.now }
+    },
+    issue: {
+        issueType: { type: String, enum: ["Return", "Refund", "Complaint", "Defect", "Other"] },
+        description: String,
+        raisedAt: { type: Date, default: Date.now },
+        status: { type: String, enum: ["Pending", "In Progress", "Resolved"], default: "Pending" }
+    }
 })
 
 let orderModel = mongoose.model('Order', orderSchema);

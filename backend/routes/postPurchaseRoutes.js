@@ -3,6 +3,13 @@ const router = express.Router();
 const postPurchaseAgent = require("../agents/postPurchaseAgent");
 const { isAuthenticatedUser } = require("../middlewares/authenticate");
 
+// Trigger post-purchase flow (called after order completion)
+router.post("/trigger", isAuthenticatedUser, async (req, res) => {
+  const { orderId } = req.body;
+  const response = await postPurchaseAgent.trigger(orderId);
+  res.json(response);
+});
+
 // Submit feedback
 router.post("/feedback", isAuthenticatedUser, async (req, res) => {
   const { orderId, rating, comment } = req.body;
