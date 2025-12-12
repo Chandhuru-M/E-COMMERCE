@@ -113,14 +113,139 @@ exports.checkout = catchAsyncError(async (req, res) => {
 
 /**
  * POST /api/v1/sales/complete
- * Body: { orderId, reservationId, pointsUsed }
- * Called after payment success (if not using webhook finalization)
+ * Body: { paymentId, orderId }
+ * Called after payment success
  */
 exports.complete = catchAsyncError(async (req, res) => {
-  const { orderId, reservationId, pointsUsed = 0 } = req.body;
+  const { paymentId, orderId } = req.body;
   const user = req.user;
   const token = req.headers.authorization?.split(" ")[1];
-  const result = await salesAgent.finalizeAfterPayment({ orderId, reservationId, userId: user._id, pointsUsed }, { token });
+  
+  // Get cart items from session or request body
+  const cartItems = JSON.parse(req.body.cartItems || '[]');
+  
+  const result = await salesAgent.finalizeAfterPayment({ 
+    paymentId,
+    orderId, 
+    userId: user._id, 
+    cartItems,
+    user
+  }, { token });
+  
   if (!result.success) return res.status(500).json(result);
-  return res.status(200).json({ success: true, message: "Order finalized", details: result.details });
+  return res.status(200).json({ 
+    success: true, 
+    message: "Order created successfully", 
+    order: result.order,
+    orderId: String(result.orderId || result.order?._id),
+    details: result.details 
+  });
+});
+
+/**
+ * POST /api/v1/sales/add-to-cart
+ * Body: { productId, quantity }
+ */
+exports.addToCart = catchAsyncError(async (req, res) => {
+  const { productId, quantity = 1 } = req.body;
+  if (!productId) return res.status(400).json({ success: false, message: "productId required" });
+
+  const user = req.user;
+  const token = req.headers.authorization?.split(" ")[1];
+
+  // Get or create session cart
+  let sessionId = req.headers["x-session-id"];
+  let session = sessionId ? getSession(sessionId) : null;
+
+  if (!session) {
+    sessionId = createSession(user._id, { cart: [] });
+    session = getSession(sessionId);
+  }
+
+  // Initialize cart if not exists
+  if (!session.cart) {
+    session.cart = [];
+  }
+
+  // Check if product already in cart
+  const existingItem = session.cart.find(item => item.productId.toString() === productId.toString());
+  
+  if (existingItem) {
+    existingItem.quantity += quantity;
+  } else {
+    session.cart.push({ productId, quantity });
+  }
+
+  updateSession(sessionId, { cart: session.cart });
+
+  return res.status(200).json({ 
+    success: true, 
+    message: "Product added to cart", 
+    cartItem: { productId, quantity },
+    sessionId 
+  });
+});
+
+/**
+ * GET /api/v1/sales/cart-summary
+ */
+exports.getCartSummary = catchAsyncError(async (req, res) => {
+  const user = req.user;
+  const sessionId = req.headers["x-session-id"];
+  
+  let cart = [];
+  
+  if (sessionId) {
+    const session = getSession(sessionId);
+    cart = session?.cart || [];
+  }
+
+  // Calculate subtotal (you might want to fetch actual product prices)
+  const subtotal = cart.reduce((sum, item) => {
+    // You should fetch the actual product price from DB
+    // For now, returning a placeholder
+    return sum + (item.price || 0) * item.quantity;
+  }, 0);
+
+  return res.status(200).json({
+    success: true,
+    items: cart,
+    subtotal,
+    itemCount: cart.length
+  });
+});
+
+/**
+ * POST /api/v1/sales/start-payment
+ * Body: { amount }
+ */
+exports.startPayment = catchAsyncError(async (req, res) => {
+  const { amount } = req.body;
+  if (!amount) return res.status(400).json({ success: false, message: "amount required" });
+
+  const user = req.user;
+  const token = req.headers.authorization?.split(" ")[1];
+
+  const orderDetails = {
+    userId: user._id,
+    amount,
+    currency: "inr"
+  };
+
+  const payRes = await salesAgent.startPayment(user, { 
+    amount, 
+    currency: "inr", 
+    orderDetails,
+    idempotencyKey: `user-${user._id}-payment-${Date.now()}`
+  }, { token });
+
+  if (!payRes || payRes.error) {
+    return res.status(400).json({ success: false, message: payRes?.message || "payment start failed" });
+  }
+
+  return res.status(200).json({
+    success: true,
+    paymentId: payRes.intentId || payRes.paymentRecordId,
+    ...payRes
+  });
 });
