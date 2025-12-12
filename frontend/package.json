@@ -11,6 +11,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.2.2",
     "countries-list": "^2.6.1",
+    "html5-qrcode": "^2.3.8",
     "mdbreact": "^5.2.0",
     "rc-slider": "^10.1.0",
     "rc-tooltip": "^5.3.0",
@@ -29,7 +30,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "GENERATE_SOURCEMAP=false react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

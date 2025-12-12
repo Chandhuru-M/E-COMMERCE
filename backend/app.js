@@ -6,7 +6,8 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, 'config/config.env') });
-
+const posRoutes = require('./routes/posRoutes');
+const barcodeRoutes = require('./routes/barcodeRoutes');
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -18,7 +19,8 @@ app.use('/api/v1', require('./routes/user'));
 app.use('/api/v1', require('./routes/order'));
 app.use('/api/v1', require('./routes/paymentRoute'));
 app.use('/api/v1', require('./routes/assistantRoute'));
-
+app.use('/api/v1/pos', posRoutes);
+app.use('/api/v1/barcode', barcodeRoutes);
 // ------------------------------
 // AI AGENT MICRO-SERVICES
 // ------------------------------
