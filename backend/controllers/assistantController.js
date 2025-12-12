@@ -6,7 +6,7 @@ exports.chatAssistant = catchAsyncError(async (req, res, next) => {
   let reply = "I'm sorry, I didn't understand that. Can you please rephrase?";
 
   if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-    reply = "Hello! Welcome to JvlCart. How can I help you today?";
+    reply = "Hello! Welcome to AURA. How can I help you today?";
   } else if (lowerMessage.includes("order")) {
     reply = "You can check your orders in the 'My Orders' section under your profile.";
   } else if (lowerMessage.includes("payment") || lowerMessage.includes("pay")) {
@@ -16,7 +16,7 @@ exports.chatAssistant = catchAsyncError(async (req, res, next) => {
   } else if (lowerMessage.includes("return") || lowerMessage.includes("refund")) {
     reply = "You can return products within 7 days of delivery if they are unused.";
   } else if (lowerMessage.includes("contact") || lowerMessage.includes("support")) {
-    reply = "You can reach our support team at support@jvlcart.com.";
+    reply = "You can reach our support team at support@aura.com.";
   }
 
   res.status(200).json({

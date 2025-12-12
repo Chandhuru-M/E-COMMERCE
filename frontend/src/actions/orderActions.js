@@ -150,9 +150,12 @@ export const adminOrders = () => async (dispatch) => {
         dispatch(adminOrdersRequest());
 
         const { data } = await axios.get("/api/v1/admin/orders");
+        
+        console.log('Admin Orders API Response:', data);
 
         dispatch(adminOrdersSuccess(data));
     } catch (error) {
+        console.error('Admin Orders Error:', error.response?.data || error.message);
         dispatch(adminOrdersFail(error.response?.data?.message || "Failed to load admin orders"));
     }
 };

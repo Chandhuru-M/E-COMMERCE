@@ -226,7 +226,7 @@ export default function UserOrders() {
       let body = {};
 
       if (actionType === "feedback") {
-        url = `http://localhost:3001/api/v1/postpurchase/feedback/${currentOrderId}`;
+        url = `/api/v1/postpurchase/feedback/${currentOrderId}`;
         body = {
           rating: document.getElementById("rating").value,
           message: actionMessage,
@@ -234,12 +234,12 @@ export default function UserOrders() {
       }
 
       if (actionType === "return") {
-        url = `http://localhost:3001/api/v1/postpurchase/request-return/${currentOrderId}`;
+        url = `/api/v1/postpurchase/request-return/${currentOrderId}`;
         body = { reason: actionMessage };
       }
 
       if (actionType === "issue") {
-        url = `http://localhost:3001/api/v1/postpurchase/report-issue/${currentOrderId}`;
+        url = `/api/v1/postpurchase/report-issue/${currentOrderId}`;
         body = { issue: actionMessage };
       }
 

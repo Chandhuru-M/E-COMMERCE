@@ -31,10 +31,11 @@ export default function Dashboard () {
 
 
     useEffect( () => {
-       dispatch(getAdminProducts);
-       dispatch(getUsers);
-       dispatch(adminOrdersAction)
-    }, [])
+       dispatch(getAdminProducts());
+       dispatch(getUsers());
+       dispatch(adminOrdersAction());
+       console.log('Admin Orders:', adminOrders);
+    }, [dispatch])
 
 
     return (

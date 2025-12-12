@@ -56,10 +56,17 @@ exports.newProduct = catchAsyncError(async (req, res, next)=>{
 
 //Get Single Product - api/v1/product/:id
 exports.getSingleProduct = catchAsyncError(async(req, res, next) => {
-    const product = await Product.findById(req.params.id).populate('reviews.user','name email');
+    const productId = req.params.id;
+    
+    // Check if it's a FAKESTORE product ID
+    if (productId.startsWith('FAKESTORE_')) {
+        return next(new ErrorHandler('Please import this product first through the shopping assistant', 400));
+    }
+    
+    const product = await Product.findById(productId).populate('reviews.user','name email');
 
     if(!product) {
-        return next(new ErrorHandler('Product not found', 400));
+        return next(new ErrorHandler('Product not found', 404));
     }
 
     res.status(201).json({
@@ -124,7 +131,7 @@ exports.deleteProduct = catchAsyncError(async (req, res, next) =>{
         });
     }
 
-    await product.remove();
+    await product.deleteOne();
 
     res.status(200).json({
         success: true,

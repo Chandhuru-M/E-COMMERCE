@@ -99,7 +99,7 @@ exports.forgotPassword = async (req, res, next) => {
     try {
       await sendEmail({
         email: user.email,
-        subject: `HIcart Password Recovery`,
+        subject: `AURA Password Recovery`,
         message,
       });
 

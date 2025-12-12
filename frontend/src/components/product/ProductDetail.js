@@ -49,6 +49,19 @@ export default function ProductDetail () {
     }
 
     useEffect(()=>{
+        // Check if trying to view a FAKESTORE product directly
+        if (id && id.startsWith('FAKESTORE_')) {
+            toast('This product needs to be imported first. Please use the shopping assistant to view it.', {
+                position: toast.POSITION.BOTTOM_CENTER,
+                type: 'warning'
+            });
+            // Optionally redirect to home after a delay
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 3000);
+            return;
+        }
+
         if(isReviewSubmitted) {
             handleClose()
             toast('Review Submitted successfully',{

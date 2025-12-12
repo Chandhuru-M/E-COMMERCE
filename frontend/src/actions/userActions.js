@@ -76,7 +76,7 @@ export const register = (userData) => async (dispatch) => {
 
 }
 
-export const loadUser =  async (dispatch) => {
+export const loadUser = () => async (dispatch) => {
 
     try {
         dispatch(loadUserRequest())
@@ -90,7 +90,7 @@ export const loadUser =  async (dispatch) => {
 
 }
 
-export const logout =  async (dispatch) => {
+export const logout = () => async (dispatch) => {
 
     try {
         await axios.get(`/api/v1/logout`);
@@ -170,7 +170,7 @@ export const resetPassword = (formData, token) => async (dispatch) => {
 
 }
 
-export const getUsers =  async (dispatch) => {
+export const getUsers = () => async (dispatch) => {
 
     try {
         dispatch(usersRequest())
