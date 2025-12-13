@@ -12,7 +12,7 @@ export default function Header () {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const logoutHandler = () => {
-      dispatch(logout);
+      dispatch(logout());
     }
 
 
@@ -41,10 +41,14 @@ export default function Header () {
                     <span>{user.name}</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu>
-                      { user.role === 'admin' && <Dropdown.Item onClick={() => {navigate('admin/dashboard')}} className='text-dark'>Dashboard</Dropdown.Item> }
-                      <Dropdown.Item onClick={() => {navigate('/myprofile')}} className='text-dark'>Profile</Dropdown.Item>
-                      <Dropdown.Item onClick={() => {navigate('/orders')}} className='text-dark'>Orders</Dropdown.Item>
-                      <Dropdown.Item onClick={logoutHandler} className='text-danger'>Logout</Dropdown.Item>
+                      { user.role === 'admin' && <Dropdown.Item onClick={() => {navigate('admin/dashboard')}} className='text-dark'><i className="fa fa-tachometer-alt"></i> Dashboard</Dropdown.Item> }
+                      { user.role === 'merchant_admin' && <Dropdown.Item onClick={() => {navigate('/merchant/dashboard')}} className='text-dark'><i className="fa fa-store"></i> Dashboard</Dropdown.Item> }
+                      { (user.role === 'admin' || user.role === 'merchant_admin' || user.role === 'staff') && 
+                        <Dropdown.Item onClick={() => {navigate('/pos')}} className='text-success'><i className="fa fa-barcode"></i> POS System</Dropdown.Item> 
+                      }
+                      <Dropdown.Item onClick={() => {navigate('/myprofile')}} className='text-dark'><i className="fa fa-user"></i> Profile</Dropdown.Item>
+                      { user.role === 'user' && <Dropdown.Item onClick={() => {navigate('/orders')}} className='text-dark'><i className="fa fa-shopping-bag"></i> Orders</Dropdown.Item> }
+                      <Dropdown.Item onClick={logoutHandler} className='text-danger'><i className="fa fa-sign-out-alt"></i> Logout</Dropdown.Item>
                   </Dropdown.Menu>
               </Dropdown>
             )

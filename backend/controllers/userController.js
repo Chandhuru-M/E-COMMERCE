@@ -204,3 +204,32 @@ exports.updateProfile = async (req, res, next) => {
     return next(new ErrorHander(error.message, 500));
   }
 };
+
+// Lookup user by email (for POS system)
+exports.lookupUser = async (req, res, next) => {
+  try {
+    const { email } = req.query;
+    
+    if (!email) {
+      return res.status(400).json({ success: false, message: 'Email required' });
+    }
+
+    const user = await User.findOne({ email }).select('name email loyaltyPoints');
+    
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        loyaltyPoints: user.loyaltyPoints || 0
+      }
+    });
+  } catch (error) {
+    return next(new ErrorHander(error.message, 500));
+  }
+};

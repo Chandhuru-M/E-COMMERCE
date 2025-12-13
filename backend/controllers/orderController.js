@@ -170,9 +170,16 @@ exports.myOrders = catchAsyncError(async (req, res, next) => {
     })
 })
 
-//Admin: Get All Orders - api/v1/orders
+//Admin: Get All Orders - api/v1/orders (supports merchantId filter)
 exports.orders = catchAsyncError(async (req, res, next) => {
-    const orders = await Order.find();
+    let query = {};
+    
+    // Support filtering by merchantId for merchant dashboard
+    if (req.query.merchantId) {
+        query.merchantId = req.query.merchantId;
+    }
+    
+    const orders = await Order.find(query).populate('user', 'name email').sort({ createdAt: -1 });
 
     let totalAmount = 0;
 

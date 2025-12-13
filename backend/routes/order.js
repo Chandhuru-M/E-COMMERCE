@@ -44,6 +44,8 @@ router.route('/order/:id').get(isAuthenticatedUser,getSingleOrder);
 router.route('/myorders').get(isAuthenticatedUser,myOrders);
 router.route('/track/:id').get(isAuthenticatedUser, trackOrder);
 
+// Orders route for merchant dashboard (with merchantId filter support)
+router.route('/orders').get(isAuthenticatedUser, orders);
 
 //Admin Routes
 router.route('/admin/orders').get(isAuthenticatedUser, authorizeRoles('admin'), orders)

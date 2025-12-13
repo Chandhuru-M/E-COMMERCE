@@ -5,8 +5,10 @@ import  Loader from '../layouts/Loader';
 import {orderDetail as orderDetailAction } from '../../actions/orderActions';
 export default function OrderDetail () {
     const { orderDetail, loading } = useSelector(state => state.orderState)
-    const { shippingInfo={}, user={}, orderStatus="Processing", orderItems=[], totalPrice=0, paymentInfo={} } = orderDetail;
-    const isPaid = paymentInfo && paymentInfo.status === "succeeded" ? true: false;
+    const { shippingInfo={}, user={}, orderStatus="Processing", orderItems=[], totalPrice=0, paymentInfo={}, merchantId } = orderDetail;
+    // Handle both Stripe payments (status: "succeeded") and POS payments (status: "PAID")
+    const isPaid = paymentInfo && (paymentInfo.status === "succeeded" || paymentInfo.status === "PAID") ? true: false;
+    const isPOSOrder = !!merchantId; // Check if this is a POS order
     const dispatch = useDispatch();
     const {id } = useParams();
 
@@ -22,17 +24,38 @@ export default function OrderDetail () {
                         <div className="col-12 col-lg-8 mt-5 order-details">
     
                             <h1 className="my-5">Order # {orderDetail._id}</h1>
+                            
+                            {isPOSOrder && (
+                                <div className="alert alert-info mb-4">
+                                    <i className="fa fa-store"></i> <strong>In-Store Purchase</strong> - This order was placed through the Point of Sale system
+                                </div>
+                            )}
     
-                            <h4 className="mb-4">Shipping Info</h4>
-                            <p><b>Name:</b> {user.name}</p>
-                            <p><b>Phone:</b> {shippingInfo.phoneNo}</p>
-                            <p className="mb-4"><b>Address:</b>{shippingInfo.address}, {shippingInfo.city}, {shippingInfo.postalCode}, {shippingInfo.state}, {shippingInfo.country}</p>
+                            {!isPOSOrder && (
+                                <>
+                                    <h4 className="mb-4">Shipping Info</h4>
+                                    <p><b>Name:</b> {user.name}</p>
+                                    <p><b>Phone:</b> {shippingInfo.phoneNo}</p>
+                                    <p className="mb-4"><b>Address:</b>{shippingInfo.address}, {shippingInfo.city}, {shippingInfo.postalCode}, {shippingInfo.state}, {shippingInfo.country}</p>
+                                </>
+                            )}
+                            
+                            {isPOSOrder && user && user.name && (
+                                <>
+                                    <h4 className="mb-4">Customer Info</h4>
+                                    <p><b>Name:</b> {user.name}</p>
+                                </>
+                            )}
+                            
                             <p><b>Amount:</b> ${totalPrice}</p>
     
                             <hr />
     
                             <h4 className="my-4">Payment</h4>
                             <p className={isPaid ? 'greenColor' : 'redColor' } ><b>{isPaid ? 'PAID' : 'NOT PAID' }</b></p>
+                            {paymentInfo.method && (
+                                <p><b>Payment Method:</b> {paymentInfo.method}</p>
+                            )}
     
     
                             <h4 className="my-4">Order Status:</h4>

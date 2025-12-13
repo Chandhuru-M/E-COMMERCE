@@ -8,6 +8,7 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.join(__dirname, 'config/config.env') });
 const posRoutes = require('./routes/posRoutes');
 const barcodeRoutes = require('./routes/barcodeRoutes');
+const merchantRoutes = require('./routes/merchantRoutes');
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -21,6 +22,7 @@ app.use('/api/v1', require('./routes/paymentRoute'));
 app.use('/api/v1', require('./routes/assistantRoute'));
 app.use('/api/v1/pos', posRoutes);
 app.use('/api/v1/barcode', barcodeRoutes);
+app.use('/api/v1/merchant', merchantRoutes);
 // ------------------------------
 // AI AGENT MICRO-SERVICES
 // ------------------------------

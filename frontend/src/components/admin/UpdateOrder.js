@@ -11,8 +11,10 @@ export default function UpdateOrder () {
     
     
     const { loading, isOrderUpdated, error, orderDetail } = useSelector( state => state.orderState)
-    const { user = {}, orderItems = [], shippingInfo = {}, totalPrice = 0, paymentInfo = {}} = orderDetail;
-    const isPaid = paymentInfo.status === 'succeeded'? true: false;
+    const { user = {}, orderItems = [], shippingInfo = {}, totalPrice = 0, paymentInfo = {}, merchantId } = orderDetail;
+    // Handle both Stripe payments (status: "succeeded") and POS payments (status: "PAID")
+    const isPaid = (paymentInfo.status === 'succeeded' || paymentInfo.status === 'PAID') ? true: false;
+    const isPOSOrder = !!merchantId;
     const [orderStatus, setOrderStatus] = useState("Processing");
     const { id:orderId } = useParams();
 

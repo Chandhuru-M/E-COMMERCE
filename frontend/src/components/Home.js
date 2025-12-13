@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getProducts } from "../actions/productActions";
+import { Link, useNavigate } from "react-router-dom";
 import Loader from "./layouts/Loader";
 import MetaData from "./layouts/MetaData";
 import Product from "./product/Product";
@@ -9,7 +10,9 @@ import Pagination from 'react-js-pagination';
 
 export  default function Home(){
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const {products, loading, error, productsCount, resPerPage} =    useSelector((state) => state.productsState)
+    const { isAuthenticated, user } = useSelector(state => state.authState);
     const [currentPage, setCurrentPage] = useState(1);
  
     const setCurrentPageNo = (pageNo) =>{
@@ -19,13 +22,25 @@ export  default function Home(){
     }
 
     useEffect(()=>{
+        // Redirect admin to their dashboard
+        if (isAuthenticated && user && user.role === 'admin') {
+            navigate('/admin/dashboard');
+            return;
+        }
+        
+        // Redirect merchant to their dashboard
+        if (isAuthenticated && user && user.role === 'merchant_admin') {
+            navigate('/merchant/dashboard');
+            return;
+        }
+        
         if(error) {
             return toast.error(error,{
                 position: toast.POSITION.BOTTOM_CENTER
             })
         }
         dispatch(getProducts(null, null, null, null, currentPage)) 
-    }, [error, dispatch, currentPage])
+    }, [error, dispatch, currentPage, isAuthenticated, user, navigate])
 
 
     return (

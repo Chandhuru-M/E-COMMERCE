@@ -18,7 +18,7 @@ const userSchema = new mongoose.Schema({
     password: {
         type: String,
         required: [true, 'Please enter password'],
-        maxlength: [6, 'Password cannot exceed 6 characters'],
+        minlength: [6, 'Password must be at least 6 characters'],
         select: false
     },
     avatar: {
@@ -47,7 +47,18 @@ loyaltyHistory: [
     createdAt: { type: Date, default: Date.now() },
     note: String
   }
-]
+],
+role: {
+  type: String,
+  enum: ["user", "admin", "merchant_admin", "staff"],
+  default: "user"
+},
+merchantId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Merchant",
+  default: null
+}
+
 
 })
 
