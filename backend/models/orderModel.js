@@ -166,7 +166,16 @@ const orderSchema = mongoose.Schema({
     paidAt: Date,
     deliveredAt: Date,
 
-    orderStatus: { type: String, required: true, default: 'Processing' },
+    orderStatus: {
+  type: String,
+  enum: [
+    "PLACED",
+    "CONFIRMED",
+    "SHIPPED",
+    "DELIVERED",
+  ],
+  default: "PLACED",
+},
 
     createdAt: {
         type: Date,
@@ -182,10 +191,16 @@ const orderSchema = mongoose.Schema({
     // DELIVERY / FULFILLMENT
     // -------------------------
     deliveryStatus: {
-        type: String,
-        enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered"],
-        default: "Pending"
-    },
+  type: String,
+  enum: [
+    "PLACED",
+    "CONFIRMED",
+    "SHIPPED",
+    "DELIVERED",
+  ],
+  default: "PLACED",
+},
+
 
     estimatedDelivery: Date,
 
@@ -215,7 +230,15 @@ const orderSchema = mongoose.Schema({
         rating: { type: Number, default: null },
         comment: { type: String, default: null },
         submittedAt: { type: Date, default: null }
-    }
+    },
+    trackingTimeline: [
+  {
+    key: String,
+    label: String,
+    time: Date,
+  }
+],
+
 });
 
 let orderModel = mongoose.model('Order', orderSchema);

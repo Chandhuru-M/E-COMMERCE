@@ -1,301 +1,644 @@
-// const catchAsyncError = require('../middlewares/catchAsyncError');
-// const Order = require('../models/orderModel');
-// const Product = require('../models/productModel');
-// const ErrorHandler = require('../utils/errorHandler');
-// //Create New Order - api/v1/order/new
-// exports.newOrder =  catchAsyncError( async (req, res, next) => {
-//     const {
-//         orderItems,
-//         shippingInfo,
-//         itemsPrice,
-//         taxPrice,
-//         shippingPrice,
-//         totalPrice,
-//         paymentInfo
-//     } = req.body;
 
-//     const order = await Order.create({
-//         orderItems,
-//         shippingInfo,
-//         itemsPrice,
-//         taxPrice,
-//         shippingPrice,
-//         totalPrice,
-//         paymentInfo,
-//         paidAt: Date.now(),
-//         user: req.user.id
-//     })
+// const catchAsyncError = require("../middlewares/catchAsyncError");
+// const Order = require("../models/orderModel");
+// const Product = require("../models/productModel");
+// const ErrorHandler = require("../utils/errorHandler");
+// const { bot } = require("../telegram/telegramBot");
+// const User = require("../models/userModel");
 
-//     res.status(200).json({
-//         success: true,
-//         order
-//     })
-// })
+// // ==========================================================
+// // SAFE TELEGRAM SENDER (PRODUCTION SAFE)
+// // ==========================================================
+// async function sendTelegram(userId, text, buttons = null) {
+//   try {
+//     console.log("🟡 sendTelegram called for user:", userId);
 
-// //Get Single Order - api/v1/order/:id
-// exports.getSingleOrder = catchAsyncError(async (req, res, next) => {
-//     const order = await Order.findById(req.params.id).populate('user', 'name email');
-//     if(!order) {
-//         return next(new ErrorHandler(`Order not found with this id: ${req.params.id}`, 404))
+//     if (!bot) {
+//       console.log("🔴 Telegram bot not initialized");
+//       return;
 //     }
 
-//     res.status(200).json({
-//         success: true,
-//         order
-//     })
-// })
-
-// //Get Loggedin User Orders - /api/v1/myorders
-// exports.myOrders = catchAsyncError(async (req, res, next) => {
-//     const orders = await Order.find({user: req.user.id});
-
-//     res.status(200).json({
-//         success: true,
-//         orders
-//     })
-// })
-
-// //Admin: Get All Orders - api/v1/orders
-// exports.orders = catchAsyncError(async (req, res, next) => {
-//     const orders = await Order.find();
-
-//     let totalAmount = 0;
-
-//     orders.forEach(order => {
-//         totalAmount += order.totalPrice
-//     })
-
-//     res.status(200).json({
-//         success: true,
-//         totalAmount,
-//         orders
-//     })
-// })
-
-// //Admin: Update Order / Order Status - api/v1/order/:id
-// exports.updateOrder =  catchAsyncError(async (req, res, next) => {
-//     const order = await Order.findById(req.params.id);
-
-//     if(order.orderStatus == 'Delivered') {
-//         return next(new ErrorHandler('Order has been already delivered!', 400))
+//     const user = await User.findById(userId);
+//     if (!user || !user.telegramChatId) {
+//       console.log("🔴 Telegram not linked for user");
+//       return;
 //     }
-//     //Updating the product stock of each order item
-//     order.orderItems.forEach(async orderItem => {
-//         await updateStock(orderItem.product, orderItem.quantity)
-//     })
 
-//     order.orderStatus = req.body.orderStatus;
-//     order.deliveredAt = Date.now();
-//     await order.save();
+//     const options = {
+//       parse_mode: "Markdown",
+//       ...(buttons && { reply_markup: { inline_keyboard: buttons } }),
+//     };
 
-//     res.status(200).json({
-//         success: true
-//     })
-    
-// });
-
-// async function updateStock (productId, quantity){
-//     const product = await Product.findById(productId);
-//     product.stock = product.stock - quantity;
-//     product.save({validateBeforeSave: false})
+//     console.log("📤 Telegram →", user.telegramChatId);
+//     await bot.sendMessage(user.telegramChatId, text, options);
+//     console.log("✅ Telegram message sent");
+//   } catch (err) {
+//     console.error("❌ Telegram Send Error:", err.message);
+//   }
 // }
 
-// //Admin: Delete Order - api/v1/order/:id
+// // ==========================================================
+// // CREATE NEW ORDER
+// // POST /api/v1/order/new
+// // ==========================================================
+// exports.newOrder = catchAsyncError(async (req, res) => {
+//   console.log("🟢 NEW ORDER CONTROLLER HIT");
+
+//   const {
+//     orderItems,
+//     shippingInfo,
+//     itemsPrice,
+//     taxPrice,
+//     shippingPrice,
+//     totalPrice,
+//     paymentInfo,
+//   } = req.body;
+
+//   const order = await Order.create({
+//     orderItems,
+//     shippingInfo,
+//     itemsPrice,
+//     taxPrice,
+//     shippingPrice,
+//     totalPrice,
+//     paymentInfo,
+//     paidAt: Date.now(),
+//     user: req.user.id,
+//     orderStatus: "Processing",
+//     deliveryStatus: "Pending",
+//   });
+
+//   console.log("🟢 ORDER CREATED:", order._id);
+
+//   await sendTelegram(
+//     order.user,
+//     `🛒 *Order Placed Successfully!*\n\n🆔 Order ID: ${order._id}\n💰 Total: ₹${order.totalPrice}`
+//   );
+
+//   res.status(200).json({
+//     success: true,
+//     order,
+//   });
+// });
+
+// // ==========================================================
+// // GET SINGLE ORDER
+// // ==========================================================
+// exports.getSingleOrder = catchAsyncError(async (req, res, next) => {
+//   const order = await Order.findById(req.params.id).populate(
+//     "user",
+//     "name email"
+//   );
+
+//   if (!order)
+//     return next(new ErrorHandler("Order not found with this ID", 404));
+
+//   res.status(200).json({
+//     success: true,
+//     order,
+//   });
+// });
+
+// // ==========================================================
+// // GET LOGGED IN USER ORDERS
+// // ==========================================================
+// exports.myOrders = catchAsyncError(async (req, res) => {
+//   const orders = await Order.find({ user: req.user.id });
+
+//   res.status(200).json({
+//     success: true,
+//     orders,
+//   });
+// });
+
+// // ==========================================================
+// // ADMIN: GET ALL ORDERS
+// // ==========================================================
+// exports.getAllOrders = catchAsyncError(async (req, res) => {
+//   const orders = await Order.find();
+//   let totalAmount = 0;
+
+//   orders.forEach((order) => {
+//     totalAmount += order.totalPrice;
+//   });
+
+//   res.status(200).json({
+//     success: true,
+//     totalAmount,
+//     orders,
+//   });
+// });
+
+// // ==========================================================
+// // UPDATE ORDER STATUS (ADMIN)
+// // PUT /api/v1/admin/order/:id
+// // ==========================================================
+// exports.updateOrder = catchAsyncError(async (req, res, next) => {
+//   console.log("🔥 UPDATE ORDER CONTROLLER HIT", req.body);
+
+//   const order = await Order.findById(req.params.id);
+//   if (!order) return next(new ErrorHandler("Order not found", 404));
+
+//   if (order.deliveryStatus === "Delivered") {
+//     return next(new ErrorHandler("Order already delivered", 400));
+//   }
+
+//   // Update stock
+//   for (const item of order.orderItems) {
+//     await updateStock(item.product, item.quantity);
+//   }
+
+//   if (req.body.orderStatus) order.orderStatus = req.body.orderStatus;
+//   if (req.body.deliveryStatus) order.deliveryStatus = req.body.deliveryStatus;
+//   if (req.body.trackingId) order.trackingId = req.body.trackingId;
+//   if (req.body.trackingUrl) order.trackingUrl = req.body.trackingUrl;
+//   if (req.body.estimatedDelivery)
+//     order.estimatedDelivery = req.body.estimatedDelivery;
+
+//   const rawStatus =
+//   req.body.deliveryStatus ||
+//   req.body.orderStatus ||
+//   req.body.status ||
+//   "";
+
+// const status = rawStatus.toString().trim().toLowerCase();
+
+
+//   if (status === "delivered") {
+//     order.deliveredAt = Date.now();
+//   }
+
+//   await order.save();
+
+//   // ================= TELEGRAM EVENTS =================
+
+//   if (status === "shipped") {
+//   await sendTelegram(
+//     order.user,
+//     `🚚 *Order Shipped!*\n\n🆔 Order ID: ${order._id}\n📦 Tracking ID: ${
+//       order.trackingId || "N/A"
+//     }\n📅 ETA: ${
+//       order.estimatedDelivery
+//         ? new Date(order.estimatedDelivery).toDateString()
+//         : "Updating soon"
+//     }`
+//   );
+// }
+
+// if (status === "delivered") {
+//   await sendTelegram(
+//     order.user,
+//     `🎉 *Order Delivered!*\n\n🆔 Order ID: ${order._id}\nHope you enjoyed your purchase 💖`,
+//     [
+//       [
+//         { text: "⭐ Feedback", callback_data: `feedback_${order._id}` },
+//         { text: "↩️ Return", callback_data: `return_${order._id}` },
+//       ],
+//       [{ text: "⚠️ Report Issue", callback_data: `issue_${order._id}` }],
+//     ]
+//   );
+// }
+// console.log("🌐 WEBSITE PAYLOAD:", req.body);
+// function pushTracking(order, key, label) {
+//   order.trackingTimeline.push({
+//     key,
+//     label,
+//     time: new Date()
+//   });
+// }
+// if (status === "shipped") {
+//   pushTracking(order, "SHIPPED", "Order Shipped");
+// }
+
+// if (status === "delivered") {
+//   pushTracking(order, "DELIVERED", "Delivered");
+// }
+
+
+
+//   res.status(200).json({
+//     success: true,
+//     order,
+//   });
+// });
+
+// // ==========================================================
+// // TRACK ORDER
+// // ==========================================================
+// exports.trackOrder = catchAsyncError(async (req, res, next) => {
+//   const order = await Order.findById(req.params.id);
+
+//   if (!order) return next(new ErrorHandler("Order not found", 404));
+
+//   res.status(200).json({
+//     success: true,
+//     tracking: {
+//       status: order.deliveryStatus || order.orderStatus,
+//       estimatedDelivery: order.estimatedDelivery || null,
+//       trackingId: order.trackingId || null,
+//       trackingUrl: order.trackingUrl || null,
+//     },
+//   });
+// });
+
+// // ==========================================================
+// // GIVE FEEDBACK
+// // ==========================================================
+// exports.giveFeedback = catchAsyncError(async (req, res, next) => {
+//   const { rating, comment } = req.body;
+//   const order = await Order.findById(req.params.id);
+
+//   if (!order) return next(new ErrorHandler("Order not found", 404));
+
+//   order.feedback = {
+//     rating,
+//     comment,
+//     submittedAt: new Date(),
+//   };
+
+//   await order.save();
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Feedback submitted successfully",
+//   });
+// });
+
+// // ==========================================================
+// // REQUEST RETURN
+// // ==========================================================
+// exports.requestReturn = catchAsyncError(async (req, res, next) => {
+//   const { reason } = req.body;
+//   const order = await Order.findById(req.params.id);
+
+//   if (!order) return next(new ErrorHandler("Order not found", 404));
+
+//   order.returnRequested = true;
+//   order.returnReason = reason;
+//   order.returnStatus = "Requested";
+
+//   await order.save();
+
+//   await sendTelegram(
+//     order.user,
+//     `↩️ *Return Requested*\n\n🆔 Order ID: ${order._id}\n📝 Reason: ${reason}`
+//   );
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Return request submitted",
+//   });
+// });
+
+// // ==========================================================
+// // REPORT ISSUE
+// // ==========================================================
+// exports.reportIssue = catchAsyncError(async (req, res, next) => {
+//   const { issueType, issueDescription } = req.body;
+//   const order = await Order.findById(req.params.id);
+
+//   if (!order) return next(new ErrorHandler("Order not found", 404));
+
+//   order.issueType = issueType;
+//   order.issueDescription = issueDescription;
+//   order.issueStatus = "Open";
+
+//   await order.save();
+
+//   await sendTelegram(
+//     order.user,
+//     `⚠️ *Issue Reported*\n\n🆔 Order ID: ${order._id}\nType: ${issueType}\n${issueDescription}`
+//   );
+
+//   res.status(200).json({
+//     success: true,
+//     message: "Issue reported successfully",
+//   });
+// });
+
+// // ==========================================================
+// // DELETE ORDER (ADMIN)
+// // ==========================================================
 // exports.deleteOrder = catchAsyncError(async (req, res, next) => {
-//     const order = await Order.findById(req.params.id);
-//     if(!order) {
-//         return next(new ErrorHandler(`Order not found with this id: ${req.params.id}`, 404))
-//     }
+//   const order = await Order.findById(req.params.id);
 
-//     await order.remove();
-//     res.status(200).json({
-//         success: true
-//     })
-// })
+//   if (!order)
+//     return next(new ErrorHandler("Order not found with this ID", 404));
 
-const catchAsyncError = require('../middlewares/catchAsyncError');
-const Order = require('../models/orderModel');
-const Product = require('../models/productModel');
-const ErrorHandler = require('../utils/errorHandler');
-//Create New Order - api/v1/order/new
-exports.newOrder =  catchAsyncError( async (req, res, next) => {
-    const {
-        orderItems,
-        shippingInfo,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice,
-        paymentInfo
-    } = req.body;
+//   await order.deleteOne();
 
-    const order = await Order.create({
-        orderItems,
-        shippingInfo,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        totalPrice,
-        paymentInfo,
-        paidAt: Date.now(),
-        user: req.user.id
-    })
+//   res.status(200).json({
+//     success: true,
+//     message: "Order deleted successfully",
+//   });
+// });
+// exports.trackOrder = catchAsyncError(async (req, res) => {
+//   const order = await Order.findById(req.params.id);
 
-    res.status(200).json({
-        success: true,
-        order
-    })
-})
+//   res.status(200).json({
+//     success: true,
+//     tracking: {
+//       status: order.deliveryStatus,
+//       timeline: order.trackingTimeline,
+//     },
+//   });
+// });
 
-//Get Single Order - api/v1/order/:id
-exports.getSingleOrder = catchAsyncError(async (req, res, next) => {
-    const order = await Order.findById(req.params.id).populate('user', 'name email');
-    if(!order) {
-        return next(new ErrorHandler(`Order not found with this id: ${req.params.id}`, 404))
-    }
 
-    res.status(200).json({
-        success: true,
-        order
-    })
-})
+// // ==========================================================
+// // STOCK UPDATE HELPER
+// // ==========================================================
+// async function updateStock(productId, quantity) {
+//   const product = await Product.findById(productId);
+//   if (!product) return;
 
-//Get Loggedin User Orders - /api/v1/myorders
-exports.myOrders = catchAsyncError(async (req, res, next) => {
-    const orders = await Order.find({user: req.user.id});
+//   product.stock -= quantity;
+//   await product.save({ validateBeforeSave: false });
+// }
 
-    res.status(200).json({
-        success: true,
-        orders
-    })
-})
 
-//Admin: Get All Orders - api/v1/orders
-exports.orders = catchAsyncError(async (req, res, next) => {
-    const orders = await Order.find();
 
-    let totalAmount = 0;
+const catchAsyncError = require("../middlewares/catchAsyncError");
+const Order = require("../models/orderModel");
+const Product = require("../models/productModel");
+const ErrorHandler = require("../utils/errorHandler");
+const { bot } = require("../telegram/telegramBot");
+const User = require("../models/userModel");
+const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 
-    orders.forEach(order => {
-        totalAmount += order.totalPrice
-    })
+// ==========================================================
+// TELEGRAM SENDER (SAFE)
+// ==========================================================
+async function sendTelegram(userId, text, buttons = null) {
+  try {
+    if (!bot) return;
 
-    res.status(200).json({
-        success: true,
-        totalAmount,
-        orders
-    })
-})
+    const user = await User.findById(userId);
+    if (!user || !user.telegramChatId) return;
 
-//Admin: Update Order / Order Status - api/v1/order/:id
-exports.updateOrder =  catchAsyncError(async (req, res, next) => {
-    const order = await Order.findById(req.params.id);
-
-    if(order.orderStatus == 'Delivered') {
-        return next(new ErrorHandler('Order has been already delivered!', 400))
-    }
-    //Updating the product stock of each order item
-    order.orderItems.forEach(async orderItem => {
-        await updateStock(orderItem.product, orderItem.quantity)
-    })
-
-    order.orderStatus = req.body.orderStatus;
-    order.deliveredAt = Date.now();
-    await order.save();
-
-    res.status(200).json({
-        success: true
-    })
-    
-});
-
-async function updateStock (productId, quantity){
-    const product = await Product.findById(productId);
-    product.stock = product.stock - quantity;
-    product.save({validateBeforeSave: false})
-}
-
-//Admin: Delete Order - api/v1/order/:id
-exports.deleteOrder = catchAsyncError(async (req, res, next) => {
-    const order = await Order.findById(req.params.id);
-    if(!order) {
-        return next(new ErrorHandler(`Order not found with this id: ${req.params.id}`, 404))
-    }
-
-    await order.deleteOne();
-    res.status(200).json({
-        success: true
-    })
-})
-// Track Order - /api/v1/track/:id
-exports.trackOrder = catchAsyncError(async (req, res, next) => {
-    const order = await Order.findById(req.params.id);
-
-    if (!order) {
-        return next(new ErrorHandler('Order not found', 404));
-    }
-
-    res.status(200).json({
-        success: true,
-        tracking: {
-            status: order.deliveryStatus || order.orderStatus,
-            estimatedDelivery: order.estimatedDelivery || null
-        }
-    });
-});
-// Track Order - /api/v1/track/:id
-exports.giveFeedback = catchAsyncError(async (req, res, next) => {
-    const { rating, comment } = req.body;
-
-    const order = await Order.findById(req.params.id);
-    if (!order) return next(new ErrorHandler("Order not found", 404));
-
-    order.feedback = {
-        rating,
-        comment,
-        submittedAt: new Date()
+    const options = {
+      parse_mode: "Markdown",
+      ...(buttons && { reply_markup: { inline_keyboard: buttons } }),
     };
 
-    await order.save();
+    await bot.sendMessage(user.telegramChatId, text, options);
+  } catch (err) {
+    console.error("Telegram Error:", err.message);
+  }
+}
 
-    res.status(200).json({
-        success: true,
-        message: "Feedback submitted successfully"
+// ==========================================================
+// HELPER: PUSH TRACKING (NO DUPLICATES)
+// ==========================================================
+function pushTracking(order, key, label) {
+  if (!order.trackingTimeline) order.trackingTimeline = [];
+
+  const exists = order.trackingTimeline.some(t => t.key === key);
+  if (!exists) {
+    order.trackingTimeline.push({
+      key,
+      label,
+      time: new Date(),
     });
+  }
+}
+
+// ==========================================================
+// CREATE NEW ORDER
+// ==========================================================
+exports.newOrder = catchAsyncError(async (req, res) => {
+  const {
+    orderItems,
+    shippingInfo,
+    itemsPrice,
+    taxPrice,
+    shippingPrice,
+    totalPrice,
+    paymentInfo,
+  } = req.body;
+
+  const order = await Order.create({
+    orderItems,
+    shippingInfo,
+    itemsPrice,
+    taxPrice,
+    shippingPrice,
+    totalPrice,
+    paymentInfo,
+    paidAt: Date.now(),
+    user: req.user.id,
+
+    orderStatus: "PLACED",
+    deliveryStatus: "PLACED",
+
+    trackingTimeline: [
+      { key: "PLACED", label: "Order Placed", time: new Date() },
+    ],
+  });
+
+  await sendTelegram(
+    order.user,
+    `🛒 *Order Placed Successfully!*\n\n🆔 Order ID: ${order._id}\n💰 Total: ₹${order.totalPrice}`
+  );
+
+  res.status(201).json({ success: true, order });
 });
 
+// ==========================================================
+// GET SINGLE ORDER
+// ==========================================================
+exports.getSingleOrder = catchAsyncError(async (req, res, next) => {
+  const order = await Order.findById(req.params.id).populate("user", "name email");
+  if (!order) return next(new ErrorHandler("Order not found", 404));
+  res.status(200).json({ success: true, order });
+});
+
+// ==========================================================
+// USER ORDERS
+// ==========================================================
+exports.myOrders = catchAsyncError(async (req, res) => {
+  const orders = await Order.find({ user: req.user.id });
+  res.status(200).json({ success: true, orders });
+});
+
+// ==========================================================
+// ADMIN: ALL ORDERS
+// ==========================================================
+exports.getAllOrders = catchAsyncError(async (req, res) => {
+  const orders = await Order.find();
+  const totalAmount = orders.reduce((sum, o) => sum + o.totalPrice, 0);
+  res.status(200).json({ success: true, totalAmount, orders });
+});
+
+// ==========================================================
+// ADMIN: UPDATE ORDER
+// ==========================================================
+exports.updateOrder = catchAsyncError(async (req, res, next) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) return next(new ErrorHandler("Order not found", 404));
+
+  const rawStatus =
+    req.body.deliveryStatus ||
+    req.body.orderStatus ||
+    req.body.status ||
+    "";
+
+  const status = rawStatus
+    .toString()
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "_");
+
+  if (status) {
+    order.deliveryStatus = status;
+    order.orderStatus = status;
+  }
+
+  if (req.body.trackingId) order.trackingId = req.body.trackingId;
+  if (req.body.trackingUrl) order.trackingUrl = req.body.trackingUrl;
+  if (req.body.estimatedDelivery)
+    order.estimatedDelivery = req.body.estimatedDelivery;
+
+  // ================= TRACKING FLOW =================
+  if (status === "CONFIRMED") pushTracking(order, "CONFIRMED", "Order Confirmed");
+  
+
+  if (status === "SHIPPED") {
+    pushTracking(order, "SHIPPED", "Order Shipped");
+
+    await sendTelegram(
+      order.user,
+      `🚚 *Order Shipped!*\n\n🆔 Order ID: ${order._id}\n📦 Tracking ID: ${
+        order.trackingId || "N/A"
+      }\n📅 ETA: ${
+        order.estimatedDelivery
+          ? new Date(order.estimatedDelivery).toDateString()
+          : "Updating soon"
+      }`
+    );
+  }
+
+  if (status === "DELIVERED") {
+    pushTracking(order, "DELIVERED", "Delivered");
+    order.deliveredAt = Date.now();
+
+    // 🔥 UPDATE STOCK ONLY ON DELIVERY
+    for (const item of order.orderItems) {
+      await updateStock(item.product, item.quantity);
+    }
+
+    await sendTelegram(
+      order.user,
+      `🎉 *Order Delivered!*\n\n🆔 Order ID: ${order._id}`,
+      [
+        [
+          { text: "⭐ Feedback", callback_data: `feedback_${order._id}` },
+          { text: "↩️ Return", callback_data: `return_${order._id}` },
+        ],
+        [{ text: "⚠️ Report Issue", callback_data: `issue_${order._id}` }],
+      ]
+    );
+  }
+
+  await order.save();
+  res.status(200).json({ success: true, order });
+});
+
+// ==========================================================
+// TRACK ORDER (WEBSITE)
+// ==========================================================
+exports.trackOrder = catchAsyncError(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) return res.status(404).json({ success: false });
+
+  res.status(200).json({
+    success: true,
+    tracking: {
+      status: order.deliveryStatus,
+      estimatedDelivery: order.estimatedDelivery || null,
+      trackingId: order.trackingId || null,
+      trackingUrl: order.trackingUrl || null,
+      timeline: order.trackingTimeline || [],
+    },
+  });
+});
+
+// ==========================================================
+// FEEDBACK
+// ==========================================================
+exports.giveFeedback = catchAsyncError(async (req, res, next) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) return next(new ErrorHandler("Order not found", 404));
+
+  order.feedback = {
+    rating: req.body.rating,
+    comment: req.body.comment,
+    submittedAt: new Date(),
+  };
+
+  await order.save();
+  res.status(200).json({ success: true, message: "Feedback submitted" });
+});
+
+// ==========================================================
+// RETURN REQUEST
+// ==========================================================
 exports.requestReturn = catchAsyncError(async (req, res, next) => {
-    const { reason } = req.body;
+  const order = await Order.findById(req.params.id);
+  if (!order) return next(new ErrorHandler("Order not found", 404));
 
-    const order = await Order.findById(req.params.id);
-    if (!order) return next(new ErrorHandler("Order not found", 404));
+  order.returnRequested = true;
+  order.returnReason = req.body.reason;
+  order.returnStatus = "REQUESTED";
 
-    order.returnRequested = true;
-    order.returnReason = reason;
-    order.returnStatus = "Requested";
+  await order.save();
 
-    await order.save();
+  await sendTelegram(
+    order.user,
+    `↩️ *Return Requested*\n\n🆔 Order ID: ${order._id}\n📝 Reason: ${req.body.reason}`
+  );
 
-    res.status(200).json({
-        success: true,
-        message: "Return request submitted"
-    });
+  res.status(200).json({ success: true, message: "Return requested" });
 });
 
+// ==========================================================
+// REPORT ISSUE
+// ==========================================================
 exports.reportIssue = catchAsyncError(async (req, res, next) => {
-    const { issueType, issueDescription } = req.body;
+  const order = await Order.findById(req.params.id);
+  if (!order) return next(new ErrorHandler("Order not found", 404));
 
-    const order = await Order.findById(req.params.id);
-    if (!order) return next(new ErrorHandler("Order not found", 404));
+  order.issueType = req.body.issueType;
+  order.issueDescription = req.body.issueDescription;
+  order.issueStatus = "OPEN";
 
-    order.issueType = issueType;
-    order.issueDescription = issueDescription;
-    order.issueStatus = "Open";
+  await order.save();
 
-    await order.save();
+  await sendTelegram(
+    order.user,
+    `⚠️ *Issue Reported*\n\n🆔 Order ID: ${order._id}\n${req.body.issueDescription}`
+  );
 
-    res.status(200).json({
-        success: true,
-        message: "Issue reported successfully"
-    });
+  res.status(200).json({ success: true, message: "Issue reported" });
 });
+
+// ==========================================================
+// DELETE ORDER (ADMIN)
+// ==========================================================
+exports.deleteOrder = catchAsyncError(async (req, res, next) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) return next(new ErrorHandler("Order not found", 404));
+
+  await order.deleteOne();
+  res.status(200).json({ success: true, message: "Order deleted" });
+});
+
+// ==========================================================
+// STOCK HELPER
+// ==========================================================
+async function updateStock(productId, quantity) {
+  const product = await Product.findById(productId);
+  if (!product) return;
+  product.stock -= quantity;
+  await product.save({ validateBeforeSave: false });
+}

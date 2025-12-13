@@ -1,0 +1,74 @@
+.tracking-container {
+  max-width: 700px;
+  margin: 50px auto;
+  padding: 20px;
+}
+
+.tracking-title {
+  font-size: 26px;
+  margin-bottom: 10px;
+}
+
+.current-status {
+  font-size: 16px;
+  margin-bottom: 30px;
+}
+
+.current-status span {
+  font-weight: bold;
+  color: green;
+}
+
+.timeline {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-step {
+  display: flex;
+  align-items: flex-start;
+}
+
+.timeline-left {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  background-color: #ccc;
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.dot.completed {
+  background-color: #28a745;
+}
+
+.line {
+  width: 3px;
+  height: 50px;
+  background-color: #ccc;
+  margin-top: 4px;
+}
+
+.line.completed {
+  background-color: #28a745;
+}
+
+.timeline-content {
+  padding-bottom: 30px;
+}
+
+.timeline-content h4 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.timeline-content p {
+  margin: 4px 0 0;
+  color: #777;
+}

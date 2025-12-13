@@ -39,6 +39,8 @@ import UpdateOrder from './components/admin/UpdateOrder';
 import UserList from './components/admin/UserList';
 import UpdateUser from './components/admin/UpdateUser';
 import ReviewList from './components/admin/ReviewList';
+import TrackOrder from "./components/order/TrackOrder";
+
 
 // ⭐ Chatbot toggle button component
 import ChatAssistant from './components/assistant/ChatAssistant';
@@ -78,6 +80,7 @@ function App() {
                       <Route path='/order/confirm' element={<ProtectedRoute><ConfirmOrder/></ProtectedRoute> } />
                       <Route path='/order/success' element={<ProtectedRoute><OrderSuccess/></ProtectedRoute> } />
                       <Route path='/orders' element={<ProtectedRoute><UserOrders/></ProtectedRoute> } />
+                      <Route path="/track/:id" element={<TrackOrder />} />
                       <Route path='/order/:id' element={<ProtectedRoute><OrderDetail/></ProtectedRoute> } />
                       {stripeApiKey && 
                         <Route path='/payment' 

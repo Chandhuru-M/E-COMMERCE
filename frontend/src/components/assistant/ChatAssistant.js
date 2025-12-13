@@ -780,7 +780,7 @@ export default function ChatAssistant() {
             </button>
             <button
               onClick={() => {
-                window.open('https://t.me/your_telegram_channel', '_blank');
+                window.open('https://t.me/shop_assistant_123_bot', '_blank');
               }}
               style={{
                 background: '#0088cc',
