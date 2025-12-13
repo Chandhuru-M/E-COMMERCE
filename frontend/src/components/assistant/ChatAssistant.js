@@ -653,6 +653,8 @@ export default function ChatAssistant() {
       const html5QrCode = new Html5Qrcode('qr-reader');
       setHtml5QrCodeRef(html5QrCode);
 
+      let isProcessing = false;
+      
       await html5QrCode.start(
         { facingMode: 'environment' },
         { 
@@ -663,7 +665,14 @@ export default function ChatAssistant() {
           formatsToSupport: [0, 8, 11, 12, 13] // CODE_128, CODE_39, CODE_93, EAN_13, EAN_8
         },
         async (decodedText) => {
-          // Scan successful
+          // Prevent multiple scans
+          if (isProcessing) return;
+          isProcessing = true;
+          
+          // Stop scanner immediately
+          await stopScanner();
+          
+          // Process the scanned barcode
           try {
             pushBot(`🔍 Scanning barcode: ${decodedText}...`);
             
@@ -677,8 +686,6 @@ export default function ChatAssistant() {
           } catch (err) {
             console.error('Barcode lookup error:', err);
             pushBot('Product not found for scanned code');
-          } finally {
-            await stopScanner();
           }
         },
         (err) => {
