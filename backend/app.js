@@ -101,6 +101,7 @@ app.use(
 app.use(express.json());
 app.use(cookieParser());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 // Core routes
 app.use('/api/v1', require('./routes/product'));

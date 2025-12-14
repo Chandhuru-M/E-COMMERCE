@@ -4,6 +4,7 @@ const User = require("../models/userModel");
 const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const salesAgent = require("../services/salesAgent");
+const path = require("path");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
@@ -56,7 +57,23 @@ function mainMenuKeyboard() {
 }
 
 function buildProductCard(product) {
-  const image = product.images && product.images[0] ? product.images[0].image : null;
+  let image = product.images && product.images[0] ? product.images[0].image : null;
+  
+  // Debug log
+  console.log(`[IMAGE] Product: ${product.name}, Original path: ${image}`);
+  
+  // Convert relative path to full URL for Telegram
+  // Images are now served from backend
+  if (image && !image.startsWith('http')) {
+    const backendUrl = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+    // Ensure path starts with /
+    if (!image.startsWith('/')) {
+      image = `/${image}`;
+    }
+    image = `${backendUrl}${image}`;
+    console.log(`[IMAGE] Full URL: ${image}`);
+  }
+  
   const stock = product.stock > 0 ? `✅ In Stock (${product.stock})` : "❌ Out of Stock";
   const price = product.price ? `$${product.price.toFixed(2)}` : "Price not available";
   
@@ -168,12 +185,20 @@ async function handleProductSearch(chatId, query) {
       const card = buildProductCard(product);
       if (card.image) {
         try {
-          await bot.sendPhoto(chatId, card.image, {
+          // Get local file path for the image
+          const imagePath = product.images && product.images[0] ? product.images[0].image : null;
+          const localImagePath = path.join(__dirname, '..', 'images', imagePath.replace(/^\/images\//, ''));
+          
+          console.log(`[IMAGE] Trying to send from: ${localImagePath}`);
+          
+          // Try to send from local file system
+          await bot.sendPhoto(chatId, localImagePath, {
             caption: card.text,
             parse_mode: "Markdown",
             ...card.keyboard
           });
-        } catch {
+        } catch (err) {
+          console.error('[IMAGE] Error sending photo:', err.message);
           await bot.sendMessage(chatId, card.text, {
             parse_mode: "Markdown",
             ...card.keyboard
@@ -505,10 +530,32 @@ bot.on("callback_query", async (query) => {
     const product = await Product.findById(data.replace("details_", ""));
     if (product) {
       const card = buildProductCard(product);
-      await bot.sendMessage(chatId, card.text + `\n\n${product.description}`, {
-        parse_mode: "Markdown",
-        ...card.keyboard
-      });
+      const fullText = card.text + `\n\n${product.description}`;
+      
+      if (card.image) {
+        try {
+          // Get local file path for the image
+          const imagePath = product.images && product.images[0] ? product.images[0].image : null;
+          const localImagePath = path.join(__dirname, '..', 'images', imagePath.replace(/^\/images\//, ''));
+          
+          await bot.sendPhoto(chatId, localImagePath, {
+            caption: fullText,
+            parse_mode: "Markdown",
+            ...card.keyboard
+          });
+        } catch (err) {
+          console.error('[IMAGE] Error sending photo:', err.message);
+          await bot.sendMessage(chatId, fullText, {
+            parse_mode: "Markdown",
+            ...card.keyboard
+          });
+        }
+      } else {
+        await bot.sendMessage(chatId, fullText, {
+          parse_mode: "Markdown",
+          ...card.keyboard
+        });
+      }
     }
     return;
   }
@@ -620,10 +667,30 @@ bot.on("message", async (msg) => {
       await bot.sendMessage(chatId, `Found ${products.length} products:`);
       for (const product of products) {
         const card = buildProductCard(product);
-        await bot.sendMessage(chatId, card.text, {
-          parse_mode: "Markdown",
-          ...card.keyboard
-        });
+        
+        if (card.image) {
+          try {
+            const imagePath = product.images && product.images[0] ? product.images[0].image : null;
+            const localImagePath = path.join(__dirname, '..', 'images', imagePath.replace(/^\/images\//, ''));
+            
+            await bot.sendPhoto(chatId, localImagePath, {
+              caption: card.text,
+              parse_mode: "Markdown",
+              ...card.keyboard
+            });
+          } catch (err) {
+            console.error('[IMAGE] Error sending photo:', err.message);
+            await bot.sendMessage(chatId, card.text, {
+              parse_mode: "Markdown",
+              ...card.keyboard
+            });
+          }
+        } else {
+          await bot.sendMessage(chatId, card.text, {
+            parse_mode: "Markdown",
+            ...card.keyboard
+          });
+        }
       }
       return;
     }

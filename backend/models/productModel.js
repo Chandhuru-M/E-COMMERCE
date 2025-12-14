@@ -107,3 +107,46 @@ const productSchema = new mongoose.Schema({
 let schema = mongoose.model('Product', productSchema)
 
 module.exports = schema
+
+function buildProductCard(product) {
+  let image = product.images && product.images[0] ? product.images[0].image : null;
+  
+  // Debug log
+  console.log(`[IMAGE] Original path: ${image}`);
+  
+  // Convert relative path to full URL for Telegram
+  if (image && !image.startsWith('http')) {
+    const backendUrl = process.env.BACKEND_URL || "http://127.0.0.1:8000";
+    // Ensure path starts with /
+    if (!image.startsWith('/')) {
+      image = `/${image}`;
+    }
+    image = `${backendUrl}${image}`;
+    console.log(`[IMAGE] Full URL: ${image}`);
+  }
+  
+  const stock = product.stock > 0 ? `✅ In Stock (${product.stock})` : "❌ Out of Stock";
+  const price = product.price ? `$${product.price.toFixed(2)}` : "Price not available";
+  
+  let text = `*${product.name}*\n\n`;
+  text += `💰 Price: ${price}\n`;
+  text += `📦 ${stock}\n`;
+  text += `📁 Category: ${product.category}\n`;
+  if (product.ratings) text += `⭐ Rating: ${product.ratings}\n`;
+  text += `\n_${product.description.substring(0, 100)}${product.description.length > 100 ? '...' : ''}_`;
+
+  return {
+    text,
+    image,
+    keyboard: {
+      reply_markup: {
+        inline_keyboard: [
+          [
+            { text: "🛒 Add to Cart", callback_data: `addcart_${product._id}` },
+            { text: "📖 Details", callback_data: `details_${product._id}` }
+          ]
+        ]
+      }
+    }
+  };
+}
