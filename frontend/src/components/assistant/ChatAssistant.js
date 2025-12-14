@@ -433,12 +433,11 @@ export default function ChatAssistant() {
 
       if (data.intent === "search") {
         if (items.length > 0) {
-          pushBot(
-            `I found ${data.total || items.length} product(s) for "${data.query}":`,
-            { products: items }
-          );
+          // Use the message from backend (Gemini) if available, otherwise fallback
+          const replyText = data.message || `I found ${data.total || items.length} product(s) for "${data.query}":`;
+          pushBot(replyText, { products: items });
         } else {
-          pushBot(`No products found for "${data.query}".`);
+          pushBot(data.message || `No products found for "${data.query}".`);
         }
       } else {
         pushBot(data.message || "Try searching for a product.");

@@ -5,7 +5,7 @@ const salesAgent = require("./salesAgent");
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
 
 module.exports = {
   /**
@@ -49,8 +49,8 @@ User message: "${userMessage}"
 
 Your goal is to route this message to the correct specialized agent.
 Available Agents:
-1. "sales": For product search, recommendations, checking stock, buying, loyalty points, adding to cart.
-2. "support": For shipping info, return policy, contact support, general FAQs, greetings, order status/tracking.
+1. "sales": For product search, recommendations, checking stock, buying, loyalty points, adding to cart. Also use this for GREETINGS (like "hi", "hello") to proactively recommend products.
+2. "support": For shipping info, return policy, contact support, general FAQs, order status/tracking.
 
 Return ONLY a JSON object with this format:
 {

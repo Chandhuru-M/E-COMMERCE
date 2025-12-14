@@ -1,6 +1,7 @@
 // controllers/salesController.js
 const catchAsyncError = require("../middlewares/catchAsyncError");
 const salesAgent = require("../services/salesAgent");
+const chatAssistantAgent = require("../agents/chatAssistantAgent"); // Import the new agent
 const { parseMessage } = require("../utils/nluParser");
 const { createSession, updateSession, getSession } = require("../middlewares/sessionStore");
 const logger = console;
@@ -14,28 +15,55 @@ exports.parseAndSearch = catchAsyncError(async (req, res) => {
   const { message, page = 1, limit = 8 } = req.body;
   if (!message) return res.status(400).json({ success: false, message: "message required" });
 
-  const parsed = parseMessage(message);
   const user = req.user;
 
   // Maintain session for multi-turn
   let sessionId = req.headers["x-session-id"];
   if (!sessionId) {
-    sessionId = createSession(user._id, { lastQuery: parsed.query });
-  } else {
-    updateSession(sessionId, { lastQuery: parsed.query });
+    sessionId = createSession(user._id, { lastQuery: message });
   }
 
-  if (parsed.intent === "search") {
-    const result = await salesAgent.search(user, { query: parsed.query, page, limit, token: req.headers.authorization?.split(" ")[1] });
-    const items = (result.data || []).map(i => ({
+  // Use the Gemini-powered ChatAssistantAgent
+  const sessionContext = { user, cart: [] }; // Add cart if needed
+  
+  console.log("Processing message:", message);
+
+  let agentResponse;
+  try {
+    agentResponse = await chatAssistantAgent.handleUserMessage(message, sessionContext);
+  } catch (error) {
+    console.error("Error in chatAssistantAgent:", error);
+    return res.status(500).json({ success: false, message: "Internal Server Error in Agent" });
+  }
+
+  // If products were found, format as a search result for the frontend
+  if (agentResponse.products && agentResponse.products.length > 0) {
+    const items = agentResponse.products.map(i => ({
       ...i,
-      id: i.id || i._id
+      id: i.id || i._id,
+      // Ensure image format matches frontend expectation
+      image: i.images && i.images[0] ? (i.images[0].url || i.images[0].image) : (i.image || "")
     }));
-    return res.status(200).json({ success: true, intent: "search", query: parsed.query, items: salesAgent.formatForChat(items), sessionId, total: result.total || 0 });
+
+    return res.status(200).json({
+      success: true,
+      intent: "search",
+      query: message, // or agentResponse.query if available
+      items: items,
+      sessionId,
+      total: items.length,
+      message: agentResponse.reply // Include the Gemini text reply too
+    });
   }
 
-  // other intents like purchase/postpurchase can be handled similarly
-  return res.status(200).json({ success: true, intent: parsed.intent, parsed, sessionId });
+  // Otherwise, return as a normal chat message
+  return res.status(200).json({
+    success: true,
+    intent: "chat",
+    parsed: { intent: "chat" },
+    sessionId,
+    message: agentResponse.reply // The Gemini response
+  });
 });
 
 /**
