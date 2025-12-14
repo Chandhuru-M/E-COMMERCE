@@ -98,10 +98,12 @@ Data Retrieved:
 ${toolResult}
 
 Task: Write a natural, engaging response to the user using the retrieved data.
-- If products were found, briefly mention that you have found some great options for them, but DO NOT list the specific products or prices in your text response, as they are already displayed as cards in the chat interface.
-- If checking stock, be clear.
-- If applying discount, be enthusiastic.
-- Keep it concise but polite.
+CRITICAL INSTRUCTION:
+- If products were found (listed in Data Retrieved), the user will see them as visual cards in the chat.
+- YOU MUST NOT list the products, prices, or details in your text response.
+- YOU MUST NOT create a markdown table or bulleted list of items.
+- Just say something like "I've found some great options for you!" or "Check out these top picks based on your request." and offer to help further.
+- If checking stock or applying discounts, you CAN be specific.
 `;
 
       const finalResult = await model.generateContent(responsePrompt);
