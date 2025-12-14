@@ -38,12 +38,16 @@ exports.parseAndSearch = catchAsyncError(async (req, res) => {
 
   // If products were found, format as a search result for the frontend
   if (agentResponse.products && agentResponse.products.length > 0) {
-    const items = agentResponse.products.map(i => ({
-      ...i,
-      id: i.id || i._id,
-      // Ensure image format matches frontend expectation
-      image: i.images && i.images[0] ? (i.images[0].url || i.images[0].image) : (i.image || "")
-    }));
+    const items = agentResponse.products.map(i => {
+      // Handle Mongoose documents if passed directly
+      const product = i.toObject ? i.toObject() : i;
+      return {
+        ...product,
+        id: product.id || product._id,
+        // Ensure image format matches frontend expectation
+        image: product.images && product.images[0] ? (product.images[0].url || product.images[0].image) : (product.image || "")
+      };
+    });
 
     return res.status(200).json({
       success: true,

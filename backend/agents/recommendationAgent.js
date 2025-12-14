@@ -10,7 +10,7 @@ module.exports = {
         { name: { $regex: q, $options: "i" } },
         { category: { $regex: q, $options: "i" } }
       ]
-    });
+    }).lean();
 
     // No products found
     if (!products.length) {
