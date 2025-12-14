@@ -48,6 +48,7 @@ export default function Header () {
                       }
                       <Dropdown.Item onClick={() => {navigate('/myprofile')}} className='text-dark'><i className="fa fa-user"></i> Profile</Dropdown.Item>
                       { user.role === 'user' && <Dropdown.Item onClick={() => {navigate('/orders')}} className='text-dark'><i className="fa fa-shopping-bag"></i> Orders</Dropdown.Item> }
+                      <Dropdown.Item as="a" href={`https://t.me/shop_assistant_123_bot?start=${user._id}`} target="_blank" rel="noreferrer" className='text-info'><i className="fab fa-telegram"></i> Connect Telegram</Dropdown.Item>
                       <Dropdown.Item onClick={logoutHandler} className='text-danger'><i className="fa fa-sign-out-alt"></i> Logout</Dropdown.Item>
                   </Dropdown.Menu>
               </Dropdown>

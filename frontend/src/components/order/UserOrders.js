@@ -943,18 +943,6 @@ export default function UserOrders() {
               🚚 Track
             </Link>
 
-            {/* Telegram Connect */}
-            {user && (
-              <a
-                href={`https://t.me/shop_assistant_123_bot?start=${user._id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn btn-info btn-sm"
-              >
-                💬 Telegram
-              </a>
-            )}
-
             {/* Delivered options */}
             {order.deliveryStatus === "DELIVERED" && (
               <div className="dropdown">
