@@ -67,7 +67,8 @@ const productSlice = createSlice({
         },
         clearProduct(state, action) {
             return{ ...state,
-                product : {}
+                product : {},
+                loading: false
             }
         },
         newProductRequest(state, action){

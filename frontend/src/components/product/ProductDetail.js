@@ -55,10 +55,7 @@ export default function ProductDetail () {
                 position: toast.POSITION.BOTTOM_CENTER,
                 type: 'warning'
             });
-            // Optionally redirect to home after a delay
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 3000);
+            setTimeout(() => { window.location.href = '/'; }, 3000);
             return;
         }
 
@@ -69,32 +66,38 @@ export default function ProductDetail () {
                 position: toast.POSITION.BOTTOM_CENTER,
                 onOpen: () => dispatch(clearReviewSubmitted())
             })
-            
         }
+
         if(error)  {
             toast(error, {
                 position: toast.POSITION.BOTTOM_CENTER,
-                type: 'error',
-                onOpen: ()=> { dispatch(clearError()) }
+                type: 'error'
             })
             return
         }
-        if(!product._id || isReviewSubmitted) {
+
+        // Fetch product if not loaded or ID mismatch
+        if((!product._id || product._id !== id) && !loading) {
             dispatch(getProduct(id))
         }
 
+    },[dispatch, id, isReviewSubmitted, error, product._id, loading])
+
+    // Cleanup on unmount or ID change
+    useEffect(() => {
         return () => {
             dispatch(clearProduct())
+            dispatch(clearError())
         }
-        
+    }, [dispatch, id])
 
-    },[dispatch, id, isReviewSubmitted, error, product._id])
-
-
+    // Show loader if loading OR if product data is not yet available for the current ID
+    if (loading || !product._id || product._id !== id) {
+        return <Loader/>;
+    }
 
     return (
         <Fragment>
-            {loading? <Loader/>:
             <Fragment>
                 <MetaData title={product.name} />
                 <div className="row f-flex justify-content-around">
