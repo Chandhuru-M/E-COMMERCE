@@ -1,5 +1,11 @@
 // agents/chatAssistantAgent.js
 const ProductService = require("../services/productService");
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const salesAgent = require("./salesAgent");
+
+// Initialize Gemini
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 module.exports = {
   /**
@@ -34,10 +40,73 @@ module.exports = {
       }
 
       // 2. Normal text-based message
-      const intent = await this.detectIntent(message);
-      const response = await this.routeIntent(intent, session);
+      const userMessage = typeof message === "string" ? message : "";
+      
+      // Use Gemini to decide which agent to use
+      const routingPrompt = `
+You are the Master Orchestrator for an e-commerce AI assistant.
+User message: "${userMessage}"
 
-      return response;
+Your goal is to route this message to the correct specialized agent.
+Available Agents:
+1. "sales": For product search, recommendations, checking stock, buying, loyalty points, adding to cart.
+2. "support": For shipping info, return policy, contact support, general FAQs, greetings, order status/tracking.
+
+Return ONLY a JSON object with this format:
+{
+  "agent": "sales" | "support",
+  "reason": "brief reason"
+}
+`;
+
+      const result = await model.generateContent(routingPrompt);
+      const responseText = result.response.text();
+      
+      // Clean up markdown if present
+      const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
+      let routingDecision;
+      
+      try {
+        routingDecision = JSON.parse(jsonString);
+      } catch (e) {
+        console.error("Failed to parse routing decision:", responseText);
+        // Fallback to support
+        routingDecision = { agent: "support" };
+      }
+
+      console.log(`Routing decision: ${routingDecision.agent} (${routingDecision.reason})`);
+
+      // Route to the chosen agent
+      if (routingDecision.agent === "sales") {
+        const salesResponse = await salesAgent.handleUserMessage(userMessage, session);
+        return {
+          success: true,
+          ...salesResponse
+        };
+      } else {
+        // Handle support/general queries directly with Gemini
+        const supportPrompt = `
+You are a helpful Customer Support Agent for an e-commerce store called AURA.
+User message: "${userMessage}"
+
+Provide a helpful, friendly, and concise response.
+If they ask about orders, tell them to check 'My Orders'.
+If they ask about shipping, say we ship worldwide in 3-5 days.
+If they ask about returns, say we accept returns within 7 days.
+If they say hello, welcome them.
+
+Return ONLY the text response.
+`;
+        const supportResult = await model.generateContent(supportPrompt);
+        const supportReply = supportResult.response.text();
+        
+        return {
+          success: true,
+          reply: supportReply,
+          session
+        };
+      }
+
     } catch (error) {
       console.error("ChatAssistant error:", error);
       return {
@@ -46,68 +115,6 @@ module.exports = {
         session
       };
     }
-  },
-
-  /**
-   * Detect user intent from message
-   * @param {string} message - User message
-   * @returns {object} Intent object
-   */
-  async detectIntent(message) {
-    const lowerMessage = typeof message === "string" ? message.toLowerCase() : "";
-
-    // Simple intent detection (can be enhanced with NLU)
-    if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {
-      return { type: "greeting" };
-    } else if (lowerMessage.includes("order")) {
-      return { type: "order_inquiry" };
-    } else if (lowerMessage.includes("payment") || lowerMessage.includes("pay")) {
-      return { type: "payment_inquiry" };
-    } else if (lowerMessage.includes("shipping") || lowerMessage.includes("delivery")) {
-      return { type: "shipping_inquiry" };
-    } else if (lowerMessage.includes("return") || lowerMessage.includes("refund")) {
-      return { type: "return_inquiry" };
-    } else if (lowerMessage.includes("contact") || lowerMessage.includes("support")) {
-      return { type: "support_inquiry" };
-    }
-
-    return { type: "unknown", message };
-  },
-
-  /**
-   * Route intent to appropriate handler
-   * @param {object} intent - Detected intent
-   * @param {object} session - User session
-   * @returns {object} Response
-   */
-  async routeIntent(intent, session) {
-    let reply = "I'm sorry, I didn't understand that. Can you please rephrase?";
-
-    switch (intent.type) {
-      case "greeting":
-        reply = "Hello! Welcome to AURA. How can I help you today?";
-        break;
-      case "order_inquiry":
-        reply = "You can check your orders in the 'My Orders' section under your profile.";
-        break;
-      case "payment_inquiry":
-        reply = "We accept Visa, MasterCard, and Stripe payments. All transactions are secure.";
-        break;
-      case "shipping_inquiry":
-        reply = "We ship worldwide! Delivery usually takes 3-5 business days.";
-        break;
-      case "return_inquiry":
-        reply = "You can return products within 7 days of delivery if they are unused.";
-        break;
-      case "support_inquiry":
-        reply = "You can reach our support team at support@aura.com.";
-        break;
-    }
-
-    return {
-      success: true,
-      reply,
-      session
-    };
   }
 };
+

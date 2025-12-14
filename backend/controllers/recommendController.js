@@ -62,6 +62,7 @@
 //   }
 // };
 // controllers/recommendController.js
+
 const recService = require("../services/recommendationEngine");
 const Product = require("../models/productModel");
 
@@ -91,6 +92,7 @@ exports.selectFakeController = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
 exports.saveSelectedProduct = async (req, res) => {
   try {
     const { fakeId, rawFake } = req.body;

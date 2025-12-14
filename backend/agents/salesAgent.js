@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 // Import existing agents
-const recommendAgent = require("./recommendAgent");
+const recommendAgent = require("./recommendationAgent");
 const inventoryAgent = require("./inventoryAgent");
 const loyaltyAgent = require("./loyaltyAgent");
 
