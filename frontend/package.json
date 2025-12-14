@@ -11,6 +11,7 @@
     "@testing-library/user-event": "^13.5.0",
     "axios": "^1.2.2",
     "countries-list": "^2.6.1",
+    "html5-qrcode": "^2.3.8",
     "mdbreact": "^5.2.0",
     "rc-slider": "^10.1.0",
     "rc-tooltip": "^5.3.0",

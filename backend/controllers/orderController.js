@@ -1,10 +1,11 @@
+const catchAsyncError = require("../middlewares/catchAsyncError");
+const Order = require("../models/orderModel");
+const Product = require("../models/productModel");
+const ErrorHandler = require("../utils/errorHandler");
+const { bot } = require("../telegram/telegramBot");
+const User = require("../models/userModel");
+const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 
-// const catchAsyncError = require("../middlewares/catchAsyncError");
-// const Order = require("../models/orderModel");
-// const Product = require("../models/productModel");
-// const ErrorHandler = require("../utils/errorHandler");
-// const { bot } = require("../telegram/telegramBot");
-// const User = require("../models/userModel");
 
 // // ==========================================================
 // // SAFE TELEGRAM SENDER (PRODUCTION SAFE)
@@ -358,13 +359,7 @@
 
 
 
-const catchAsyncError = require("../middlewares/catchAsyncError");
-const Order = require("../models/orderModel");
-const Product = require("../models/productModel");
-const ErrorHandler = require("../utils/errorHandler");
-const { bot } = require("../telegram/telegramBot");
-const User = require("../models/userModel");
-const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
+
 
 // ==========================================================
 // TELEGRAM SENDER (SAFE)
@@ -459,6 +454,24 @@ exports.getSingleOrder = catchAsyncError(async (req, res, next) => {
 exports.myOrders = catchAsyncError(async (req, res) => {
   const orders = await Order.find({ user: req.user.id });
   res.status(200).json({ success: true, orders });
+});
+
+//Admin: Get All Orders - api/v1/orders (supports merchantId filter)
+exports.orders = catchAsyncError(async (req, res, next) => {
+    let query = {};
+    
+    // Support filtering by merchantId for merchant dashboard
+    if (req.query.merchantId) {
+        query.merchantId = req.query.merchantId;
+    }
+    
+    const orders = await Order.find(query).populate('user', 'name email').sort({ createdAt: -1 });
+
+    res.status(200).json({
+        success: true,
+        count: orders.length,
+        orders
+    });
 });
 
 // ==========================================================

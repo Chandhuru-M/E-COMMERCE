@@ -1,148 +1,26 @@
-// const mongoose = require('mongoose');
 
-// const orderSchema = mongoose.Schema({
-//     shippingInfo: {
-//         address: {
-//             type: String,
-//             required: true
-//         },
-//         country: {
-//             type: String,
-//             required: true
-//         },
-//         city: {
-//             type: String,
-//             required: true
-//         },
-//         phoneNo: {
-//             type: String,
-//             required: true
-//         },
-//         postalCode: {
-//             type: String,
-//             required: true
-//         }
-        
-//     },
-//     user: {
-//         type: mongoose.SchemaTypes.ObjectId,
-//         required: true,
-//         ref: 'User'
-//     },
-//     orderItems: [{
-//         name: {
-//             type: String,
-//             required: true
-//         },
-//         quantity: {
-//             type: Number,
-//             required: true
-//         },
-//         image: {
-//             type: String,
-//             required: true
-//         },
-//         price: {
-//             type: Number,
-//             required: true
-//         },
-//         product: {
-//             type: mongoose.SchemaTypes.ObjectId,
-//             required: true,
-//             ref: 'Product'
-//         }
-
-//     }],
-//     itemsPrice: {
-//         type: Number,
-//         required: true,
-//         default: 0.0
-//     },
-//     taxPrice: {
-//         type: Number,
-//         required: true,
-//         default: 0.0
-//     },
-//     shippingPrice: {
-//         type: Number,
-//         required: true,
-//         default: 0.0
-//     },
-//     totalPrice: {
-//         type: Number,
-//         required: true,
-//         default: 0.0
-//     },
-//     paymentInfo: {
-//         id: {
-//             type: String,
-//             required: true
-//         },
-//         status: {
-//             type: String,
-//             required: true
-//         }
-//     },
-//     paidAt: {
-//         type: Date
-//     },
-//     deliveredAt: {
-//         type: Date
-//     },
-//     orderStatus: {
-//         type: String,
-//         required: true,
-//         default: 'Processing'
-//     },
-//     createdAt: {
-//         type: Date,
-//         default: Date.now
-//     },loyalty: {
-//   appliedPoints: { type: Number, default: 0 },
-//   earnedPoints: { type: Number, default: 0 }
-// },
-//     deliveryStatus: {
-//         type: String,
-//         enum: ["Pending", "Processing", "Shipped", "Out for Delivery", "Delivered"],
-//         default: "Pending"
-//     },
-//     estimatedDelivery: Date,
-//     postPurchaseStatus: {
-//         type: String,
-//         enum: ["Pending Feedback", "Completed", "Issue Raised"],
-//         default: "Pending Feedback"
-//     },
-//     feedback: {
-//         rating: { type: Number, min: 1, max: 5 },
-//         comment: String,
-//         submittedAt: { type: Date, default: Date.now }
-//     },
-//     issue: {
-//         issueType: { type: String, enum: ["Return", "Refund", "Complaint", "Defect", "Other"] },
-//         description: String,
-//         raisedAt: { type: Date, default: Date.now },
-//         status: { type: String, enum: ["Pending", "In Progress", "Resolved"], default: "Pending" }
-//     }
-// })
-
-// let orderModel = mongoose.model('Order', orderSchema);
-
-// module.exports = orderModel;
 const mongoose = require('mongoose');
 
 const orderSchema = mongoose.Schema({
     shippingInfo: {
-        address: { type: String, required: true },
-        country: { type: String, required: true },
-        city: { type: String, required: true },
-        phoneNo: { type: String, required: true },
-        postalCode: { type: String, required: true }
+        address: { type: String, required: false },
+        country: { type: String, required: false },
+        city: { type: String, required: false },
+        phoneNo: { type: String, required: false },
+        postalCode: { type: String, required: false }
     },
 
     user: {
         type: mongoose.SchemaTypes.ObjectId,
-        required: true,
+        required: false, // Optional for POS walk-in customers
         ref: 'User'
+    },
+
+    // Merchant ID for POS orders
+    merchantId: {
+        type: String,
+        required: false,
+        index: true
     },
 
     orderItems: [{

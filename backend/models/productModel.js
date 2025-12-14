@@ -58,6 +58,16 @@ const productSchema = new mongoose.Schema({
         required: [true, "Please enter product stock"],
         maxLength: [20, 'Product stock cannot exceed 20']
     },
+    sizes: {
+        type: [String],
+        default: []
+    },
+    barcode: {
+        type: String,
+        unique: true,
+        sparse: true,
+        index: true
+    },
     numOfReviews: {
         type: Number,
         default: 0
@@ -85,7 +95,13 @@ const productSchema = new mongoose.Schema({
     createdAt:{
         type: Date,
         default: Date.now()
-    }
+    },
+    merchantId: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Merchant",
+  required: true
+}
+
 })
 
 let schema = mongoose.model('Product', productSchema)

@@ -85,7 +85,7 @@ export const loadUser = () => async (dispatch) => {
         const { data }  = await axios.get(`/api/v1/myprofile`);
         dispatch(loadUserSuccess(data))
     } catch (error) {
-        dispatch(loadUserFail(error.response.data.message))
+        dispatch(loadUserFail(error.response?.data?.message || error.message))
     }
 
 }

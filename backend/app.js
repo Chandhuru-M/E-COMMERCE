@@ -81,6 +81,10 @@ dotenv.config({ path: path.join(__dirname, 'config/config.env') });
 const telegramBot = require("./telegram/telegramBot");
 
 const cors = require("cors");
+const posRoutes = require('./routes/posRoutes');
+const barcodeRoutes = require('./routes/barcodeRoutes');
+const merchantRoutes = require('./routes/merchantRoutes');
+
 process.once("SIGUSR2", () => {
   process.kill(process.pid, "SIGUSR2");
 });
@@ -105,7 +109,9 @@ app.use('/api/v1', require('./routes/user'));
 app.use('/api/v1', require('./routes/order'));
 app.use('/api/v1', require('./routes/paymentRoute'));
 app.use('/api/v1', require('./routes/assistantRoute'));
-
+app.use('/api/v1/pos', posRoutes);
+app.use('/api/v1/barcode', barcodeRoutes);
+app.use('/api/v1/merchant', merchantRoutes);
 // ------------------------------
 // AI AGENT MICRO-SERVICES
 // ------------------------------

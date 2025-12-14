@@ -117,8 +117,14 @@ const userSchema = new mongoose.Schema({
 
     role: {
         type: String,
-        enum: ["user", "admin"],
+        enum: ["user", "admin", "merchant_admin", "staff"],
         default: "user"
+    },
+
+    merchantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Merchant",
+        default: null
     },
 
     telegramChatId: {
@@ -133,6 +139,7 @@ const userSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     },
+
 
     // Loyalty system
     loyaltyPoints: {

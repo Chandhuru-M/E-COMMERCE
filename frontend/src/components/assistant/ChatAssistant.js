@@ -217,6 +217,7 @@ import "../../ChatAssistant.css";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addCartItem } from "../../actions/cartActions";
+import { Html5Qrcode } from 'html5-qrcode';
 
 // Payment Form Component
 function PaymentForm({ onSubmit }) {
@@ -377,6 +378,8 @@ export default function ChatAssistant() {
   const [isOpen, setIsOpen] = useState(false);
   const [sessionId, setSessionId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [html5QrCodeRef, setHtml5QrCodeRef] = useState(null);
 
   const { isAuthenticated } = useSelector(state => state.authState);
   const { items: cartItems } = useSelector(state => state.cartState);
@@ -630,6 +633,161 @@ export default function ChatAssistant() {
     }
   };
 
+  // BARCODE SCANNER
+  const openScanner = async () => {
+    if (isScanning) {
+      // Stop scanning if already active
+      await stopScanner();
+      return;
+    }
+
+    const scannerDiv = document.getElementById('qr-reader');
+    if (!scannerDiv) return;
+
+    try {
+      setIsScanning(true);
+      scannerDiv.style.display = 'block';
+      pushBot('📷 Opening camera... Please allow camera access when prompted.');
+      pushBot('📌 Tips:\n• Hold barcode 10-15cm from camera\n• Ensure good lighting\n• Keep barcode horizontal\n• Wait for green scanning box');
+
+      const html5QrCode = new Html5Qrcode('qr-reader');
+      setHtml5QrCodeRef(html5QrCode);
+
+      let isProcessing = false;
+      
+      await html5QrCode.start(
+        { facingMode: 'environment' },
+        { 
+          fps: 10, 
+          qrbox: { width: 300, height: 150 },
+          aspectRatio: 2.0,
+          disableFlip: false,
+          formatsToSupport: [0, 8, 11, 12, 13] // CODE_128, CODE_39, CODE_93, EAN_13, EAN_8
+        },
+        async (decodedText) => {
+          // Prevent multiple scans
+          if (isProcessing) return;
+          isProcessing = true;
+          
+          // Stop scanner immediately
+          await stopScanner();
+          
+          // Process the scanned barcode
+          try {
+            pushBot(`🔍 Scanning barcode: ${decodedText}...`);
+            
+            const { data } = await axios.get(`/api/v1/barcode/${encodeURIComponent(decodedText)}`);
+            
+            if (data.success && data.product) {
+              pushBot(data.reply || 'Product found!', { productDetails: data.product });
+            } else {
+              pushBot('Product not found for scanned code');
+            }
+          } catch (err) {
+            console.error('Barcode lookup error:', err);
+            pushBot('Product not found for scanned code');
+          }
+        },
+        (err) => {
+          // parsing error - ignore
+        }
+      );
+    } catch (err) {
+      console.error('Scanner error:', err);
+      setIsScanning(false);
+      
+      if (scannerDiv) {
+        scannerDiv.style.display = 'none';
+      }
+
+      if (err.name === 'NotAllowedError') {
+        pushBot('❌ Camera access denied. Please allow camera permissions in your browser settings and try again.');
+      } else if (err.name === 'NotFoundError') {
+        pushBot('❌ No camera found on your device.');
+      } else if (err.name === 'NotReadableError') {
+        pushBot('❌ Camera is already in use by another application.');
+      } else {
+        pushBot('❌ Failed to start camera. Please check permissions and try again.');
+      }
+    }
+  };
+
+  const stopScanner = async () => {
+    if (html5QrCodeRef) {
+      try {
+        await html5QrCodeRef.stop();
+        html5QrCodeRef.clear();
+      } catch (e) {
+        console.log('Stop error:', e);
+      }
+      setHtml5QrCodeRef(null);
+    }
+    
+    setIsScanning(false);
+    const scannerDiv = document.getElementById('qr-reader');
+    if (scannerDiv) {
+      scannerDiv.style.display = 'none';
+    }
+  };
+
+  // UPLOAD BARCODE IMAGE
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    pushBot('📤 Scanning uploaded barcode image...');
+
+    try {
+      const html5QrCode = new Html5Qrcode('qr-reader');
+      const decodedText = await html5QrCode.scanFile(file, true);
+      
+      pushBot(`🔍 Found barcode: ${decodedText}`);
+      
+      // Lookup product
+      const { data } = await axios.get(`/api/v1/barcode/${encodeURIComponent(decodedText)}`);
+      
+      if (data.success && data.product) {
+        pushBot(data.reply || 'Product found!', { productDetails: data.product });
+      } else {
+        pushBot('Product not found for scanned code');
+      }
+    } catch (err) {
+      console.error('File scan error:', err);
+      pushBot('❌ Could not read barcode from image. Please ensure the image is clear and contains a valid barcode.');
+    } finally {
+      setIsLoading(false);
+      // Reset file input
+      event.target.value = '';
+    }
+  };
+
+  // SEND BARCODE TO ASSISTANT (Alternative method using assistant API)
+  const sendBarcodeToChatAssistant = async (scannedCode) => {
+    try {
+      pushBot(`🔍 Looking up barcode: ${scannedCode}...`);
+      
+      const response = await axios.post("/api/v1/assistant", {
+        message: {
+          type: "barcode_scan",
+          data: scannedCode
+        }
+      });
+
+      if (response.data.success) {
+        pushBot(response.data.reply);
+        if (response.data.product) {
+          pushBot('', { productDetails: response.data.product });
+        }
+      } else {
+        pushBot('Product not found for this barcode');
+      }
+    } catch (err) {
+      console.error('Assistant barcode error:', err);
+      pushBot('Error processing barcode');
+    }
+  };
+
   // RENDER MESSAGE
   function renderMessage(msg, idx) {
     if (msg.products?.length) {
@@ -820,11 +978,88 @@ export default function ChatAssistant() {
       {isOpen && (
         <div className="chat-window">
           <div className="chat-header">
-            <strong>AI Shopping Assistant</strong>
-            <button onClick={() => setIsOpen(false)}>✖</button>
+            <strong>🤖 AI Shopping Assistant</strong>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <button 
+                onClick={openScanner} 
+                style={{ 
+                  background: isScanning ? '#EF4444' : '#10B981',
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '8px 14px', 
+                  borderRadius: '8px', 
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  minWidth: '90px'
+                }}
+              >
+                <span style={{ fontSize: '16px' }}>{isScanning ? '⏹' : '📷'}</span>
+                {isScanning ? 'Stop' : 'Scan'}
+              </button>
+              <input 
+                type="file" 
+                id="barcode-upload" 
+                accept="image/*" 
+                onChange={handleFileUpload}
+                style={{ display: 'none' }}
+              />
+              <button 
+                onClick={() => document.getElementById('barcode-upload').click()}
+                style={{ 
+                  background: '#3B82F6',
+                  color: 'white', 
+                  border: 'none', 
+                  padding: '8px 14px', 
+                  borderRadius: '8px', 
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
+                  transition: 'all 0.2s',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  minWidth: '90px'
+                }}
+              >
+                <span style={{ fontSize: '16px' }}>📤</span>
+                Upload
+              </button>
+              <button 
+                onClick={() => setIsOpen(false)}
+                style={{
+                  background: 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  color: 'white',
+                  fontSize: '18px',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'background 0.2s'
+                }}
+                onMouseEnter={(e) => e.target.style.background = 'rgba(255,255,255,0.3)'}
+                onMouseLeave={(e) => e.target.style.background = 'rgba(255,255,255,0.2)'}
+              >
+                ✖
+              </button>
+            </div>
           </div>
 
           <div className="chat-body">
+            <div id="qr-reader" style={{ width: '100%', marginBottom: '12px', display: 'none', borderRadius: '8px', overflow: 'hidden' }}></div>
             {messages.length === 0 && (
               <div className="chat-welcome">
                 <p>Ask me:</p>

@@ -44,6 +44,17 @@ import TrackOrder from "./components/order/TrackOrder";
 
 // ⭐ Chatbot toggle button component
 import ChatAssistant from './components/assistant/ChatAssistant';
+import POSSystem from './components/pos/POSSystem';
+
+// Merchant components
+import MerchantRequestForm from './components/merchant/MerchantRequestForm';
+import MerchantDashboard from './components/merchant/MerchantDashboard';
+import MerchantOrders from './components/merchant/MerchantOrders';
+import MerchantInventory from './components/merchant/MerchantInventory';
+import MerchantAnalytics from './components/merchant/MerchantAnalytics';
+import MerchantNewProduct from './components/merchant/MerchantNewProduct';
+import MerchantUpdateProduct from './components/merchant/MerchantUpdateProduct';
+import MerchantRequests from './components/admin/MerchantRequests';
 
 function App() {
   const [stripeApiKey, setStripeApiKey] = useState("")
@@ -104,6 +115,19 @@ function App() {
                       <Route path='/admin/users' element={ <ProtectedRoute isAdmin={true}><UserList/></ProtectedRoute> } />
                       <Route path='/admin/user/:id' element={ <ProtectedRoute isAdmin={true}><UpdateUser/></ProtectedRoute> } />
                       <Route path='/admin/reviews' element={ <ProtectedRoute isAdmin={true}><ReviewList/></ProtectedRoute> } />
+                      <Route path='/admin/merchant-requests' element={ <ProtectedRoute isAdmin={true}><MerchantRequests/></ProtectedRoute> } />
+                      
+                      {/* Merchant Routes */}
+                      <Route path='/merchant/request' element={<MerchantRequestForm/>} />
+                      <Route path='/merchant/dashboard' element={<ProtectedRoute><MerchantDashboard/></ProtectedRoute>} />
+                      <Route path='/merchant/orders' element={<ProtectedRoute><MerchantOrders/></ProtectedRoute>} />
+                      <Route path='/merchant/inventory' element={<ProtectedRoute><MerchantInventory/></ProtectedRoute>} />
+                      <Route path='/merchant/product/new' element={<ProtectedRoute><MerchantNewProduct/></ProtectedRoute>} />
+                      <Route path='/merchant/product/:id' element={<ProtectedRoute><MerchantUpdateProduct/></ProtectedRoute>} />
+                      <Route path='/merchant/analytics' element={<ProtectedRoute><MerchantAnalytics/></ProtectedRoute>} />
+                      
+                      {/* POS Route - for merchants and staff */}
+                      <Route path='/pos' element={<ProtectedRoute><POSSystem/></ProtectedRoute>} />
                   </Routes>
                 </div>
 

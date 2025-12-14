@@ -129,6 +129,7 @@ const {
   getSingleOrder,
   myOrders,
   getAllOrders,
+  orders,
   updateOrder,
   deleteOrder,
   trackOrder,
@@ -177,6 +178,9 @@ router.route('/track/:id').get(isAuthenticatedUser, trackOrder);
 // Admin
 router.route("/admin/orders")
   .get(isAuthenticatedUser, authorizeRoles("admin"), getAllOrders);
+
+// Orders route for merchant dashboard (with merchantId filter support)
+router.route('/orders').get(isAuthenticatedUser, orders);
 
 router.route('/admin/order/:id')
   .put(isAuthenticatedUser, authorizeRoles('admin'), updateOrder)

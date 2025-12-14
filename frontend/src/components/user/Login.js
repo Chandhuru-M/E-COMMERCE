@@ -76,6 +76,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
                         <Link to="/register" className="float-right mt-3">New User?</Link>
                     </form>
+
+                    <div className="text-center mt-4 p-3 border-top">
+                        <p className="text-muted mb-2"><i className="fa fa-store"></i> Want to sell with us?</p>
+                        <Link to="/merchant/request" className="btn btn-outline-primary btn-sm">
+                            <i className="fa fa-handshake mr-2"></i> Become a Merchant
+                        </Link>
+                    </div>
                 </div>
             </div>
         </Fragment>

@@ -108,6 +108,20 @@ export default function Dashboard () {
                             </div>
                         </div>
                     </div>
+
+                    <div className="col-xl-3 col-sm-6 mb-3">
+                        <div className="card text-white bg-dark o-hidden h-100">
+                            <div className="card-body">
+                                <div className="text-center card-font-size"><i className="fa fa-barcode"></i> POS System<br /> <b>Barcode Scanner</b></div>
+                            </div>
+                            <Link className="card-footer text-white clearfix small z-1" to="/pos">
+                                <span className="float-left">Open POS</span>
+                                <span className="float-right">
+                                    <i className="fa fa-angle-right"></i>
+                                </span>
+                            </Link>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

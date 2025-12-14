@@ -1,8 +1,32 @@
 const catchAsyncError = require("../middlewares/catchAsyncError");
+const ProductService = require("../services/productService");
 
 exports.chatAssistant = catchAsyncError(async (req, res, next) => {
   const { message } = req.body;
-  const lowerMessage = message ? message.toLowerCase() : "";
+
+  // 1. Check if this is a BARCODE scan event
+  if (message && typeof message === "object" && message.type === "barcode_scan") {
+    const scannedCode = message.data; // e.g. "PRD1023"
+
+    const product = await ProductService.findByBarcode(scannedCode);
+
+    if (!product) {
+      return res.status(200).json({
+        success: true,
+        reply: `I could not find a product for barcode: ${scannedCode}`,
+        product: null
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      reply: `Here is what I found for barcode ${scannedCode}:`,
+      product: ProductService.toPublic(product)
+    });
+  }
+
+  // 2. Normal text-based message
+  const lowerMessage = message && typeof message === "string" ? message.toLowerCase() : "";
   let reply = "I'm sorry, I didn't understand that. Can you please rephrase?";
 
   if (lowerMessage.includes("hello") || lowerMessage.includes("hi")) {

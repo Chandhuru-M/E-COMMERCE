@@ -1,13 +1,21 @@
+const http = require('http');
 const app = require('./app');
 const path = require('path');
 const connectDatabase = require('./config/database');
-
+const { createSocketServer } = require('./socketManager');
 
 connectDatabase();
 
-const server = app.listen(process.env.PORT,()=>{
-    console.log(`My Server listening to the port: ${process.env.PORT} in  ${process.env.NODE_ENV} `)
-})
+const PORT = process.env.PORT || 8000;
+const server = http.createServer(app);
+
+// Initialize socket.io
+const io = createSocketServer(server);
+global.io = io; // optional convenience
+
+server.listen(PORT, () => {
+    console.log(`My Server listening to the port: ${PORT} in ${process.env.NODE_ENV}`);
+});
 
 process.on('unhandledRejection',(err)=>{
     console.log(`Error: ${err.message}`);
