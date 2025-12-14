@@ -132,6 +132,15 @@ const userSchema = new mongoose.Schema({
         default: null
     },
 
+    telegramCart: [
+        {
+            product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' },
+            name: String,
+            price: Number,
+            quantity: Number
+        }
+    ],
+
     resetPasswordToken: String,
     resetPasswordExpire: Date,
 

@@ -93,7 +93,7 @@ process.once("SIGUSR2", () => {
 // CORS - allow your frontend(s)
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"],
     credentials: true,
   })
 );
@@ -108,7 +108,7 @@ app.use('/api/v1', require('./routes/auth'));
 app.use('/api/v1', require('./routes/user'));
 app.use('/api/v1', require('./routes/order'));
 app.use('/api/v1', require('./routes/paymentRoute'));
-app.use('/api/v1', require('./routes/assistantRoute'));
+app.use('/api/v1', require('./routes/assistantRoute'));  // POST /api/v1/assistant
 app.use('/api/v1/pos', posRoutes);
 app.use('/api/v1/barcode', barcodeRoutes);
 app.use('/api/v1/merchant', merchantRoutes);

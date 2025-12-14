@@ -589,7 +589,7 @@ module.exports = {
             status: "paid"
           },
           paidAt: new Date(),
-          orderStatus: "Processing"
+          orderStatus: "PLACED"
         });
 
         results.order = newOrder;

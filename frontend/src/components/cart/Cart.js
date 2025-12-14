@@ -1,12 +1,81 @@
-import { Fragment } from 'react'
+import { Fragment, useEffect } from 'react'
 import {useDispatch, useSelector} from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
-import { decreaseCartItemQty, increaseCartItemQty,removeItemFromCart } from '../../slices/cartSlice';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { decreaseCartItemQty, increaseCartItemQty,removeItemFromCart, addCartItemSuccess } from '../../slices/cartSlice';
+import axios from 'axios';
 
 export default function Cart() {
     const {items } = useSelector(state => state.cartState)
+    const {user} = useSelector(state => state.authState)
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // Load Telegram cart if coming from Telegram
+    useEffect(() => {
+        const source = searchParams.get('source');
+        const userId = searchParams.get('userId');
+        
+        if (source === 'telegram' && userId && user && user._id === userId) {
+            loadTelegramCart();
+        }
+    }, [searchParams, user]);
+
+    const loadTelegramCart = async () => {
+        try {
+            const { data } = await axios.get('/api/v1/me', { withCredentials: true });
+            const telegramCart = data.user.telegramCart || [];
+            
+            console.log('Telegram cart items:', telegramCart);
+            
+            if (telegramCart.length > 0) {
+                // Fetch full product details for each item
+                for (const item of telegramCart) {
+                    try {
+                        const { data: productData } = await axios.get(`/api/v1/product/${item.product}`);
+                        const product = productData.product;
+                        
+                        // Add to Redux cart with full product details
+                        dispatch(addCartItemSuccess({
+                            product: product._id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.images && product.images[0] ? product.images[0].image : '/images/default_product.png',
+                            stock: product.stock,
+                            quantity: item.quantity
+                        }));
+                    } catch (err) {
+                        console.error(`Error loading product ${item.product}:`, err);
+                    }
+                }
+                
+                // Clear telegram cart from backend after loading
+                await axios.put('/api/v1/telegram/clear-cart', {}, { withCredentials: true });
+                
+                alert('Cart loaded from Telegram! ✅');
+            }
+        } catch (error) {
+            console.error('Error loading Telegram cart:', error);
+        }
+    };
+
+    // Sync cart to Telegram whenever cart changes
+    useEffect(() => {
+        const syncCartToTelegram = async () => {
+            if (user && user._id && items.length > 0) {
+                try {
+                    await axios.put('/api/v1/telegram/sync-cart', 
+                        { items }, 
+                        { withCredentials: true }
+                    );
+                } catch (error) {
+                    console.error('Error syncing cart to Telegram:', error);
+                }
+            }
+        };
+        
+        syncCartToTelegram();
+    }, [items, user]);
 
     const increaseQty = (item) => {
         const count = item.quantity;

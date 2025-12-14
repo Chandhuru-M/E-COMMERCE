@@ -56,6 +56,9 @@ import MerchantNewProduct from './components/merchant/MerchantNewProduct';
 import MerchantUpdateProduct from './components/merchant/MerchantUpdateProduct';
 import MerchantRequests from './components/admin/MerchantRequests';
 
+// Configure axios to send credentials (cookies) with every request
+axios.defaults.withCredentials = true;
+
 function App() {
   const [stripeApiKey, setStripeApiKey] = useState("")
 

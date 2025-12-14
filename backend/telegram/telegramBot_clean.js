@@ -22,6 +22,7 @@ console.log("BOT LOADED");
 
 // In-memory state
 const pendingReplies = new Map();
+const userCarts = new Map();
 
 // Helper functions
 function buildOrderInlineKeyboard(order) {
@@ -200,32 +201,23 @@ async function addToCart(chatId, productId) {
       return;
     }
 
-    // Get user and use database as single source of truth
-    const user = await User.findOne({ telegramChatId: String(chatId) });
-    if (!user) {
-      await bot.sendMessage(chatId, "⚠️ Please connect your Telegram from the website first.");
-      return;
-    }
-
-    let cart = user.telegramCart || [];
-    const existing = cart.find(item => item.product.toString() === productId);
+    let cart = userCarts.get(chatId) || [];
+    const existing = cart.find(item => item.productId === productId);
     
     if (existing) {
       existing.quantity += 1;
     } else {
       cart.push({
-        product: productId,
+        productId,
         name: product.name,
         price: product.price,
         quantity: 1
       });
     }
     
-    user.telegramCart = cart;
-    await user.save();
-    console.log(`✅ Cart saved to database for user: ${user.name}`);
+    userCarts.set(chatId, cart);
     
-    await bot.sendMessage(chatId, `✅ Added *${product.name}* to cart!\n\nCart: ${user.telegramCart.length} item(s)`, {
+    await bot.sendMessage(chatId, `✅ Added *${product.name}* to cart!\n\nCart: ${cart.length} item(s)`, {
       parse_mode: "Markdown",
       reply_markup: {
         inline_keyboard: [
@@ -244,25 +236,7 @@ async function addToCart(chatId, productId) {
 
 async function viewCart(chatId) {
   try {
-    const user = await User.findOne({ telegramChatId: String(chatId) });
-    
-    if (!user) {
-      await bot.sendMessage(chatId, "⚠️ Please connect your account first using /start", mainMenuKeyboard());
-      return;
-    }
-    
-    // Load cart from database (single source of truth)
-    const dbCart = user.telegramCart || [];
-    
-    // Convert to the format expected by the bot
-    const cart = dbCart.map(item => ({
-      productId: item.product,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity
-    }));
-    
-    console.log(`[CART] ChatId: ${chatId}, User: ${user.name}, Items: ${cart.length}`);
+    const cart = userCarts.get(chatId) || [];
     
     if (cart.length === 0) {
       await bot.sendMessage(chatId, "🛒 Your cart is empty.", mainMenuKeyboard());
@@ -270,7 +244,7 @@ async function viewCart(chatId) {
     }
 
     let total = 0;
-    let cartText = `*🛒 Your Cart*${user ? ` (${user.name})` : ''}\n\n`;
+    let cartText = "*🛒 Your Cart*\n\n";
     
     cart.forEach((item, index) => {
       const itemTotal = item.price * item.quantity;
@@ -297,14 +271,13 @@ async function viewCart(chatId) {
 
 async function handleCheckout(chatId) {
   try {
-    const user = await User.findOne({ telegramChatId: String(chatId) });
+    const cart = userCarts.get(chatId) || [];
+    const user = await User.findOne({ telegramChatId: chatId });
     
     if (!user) {
-      await bot.sendMessage(chatId, "⚠️ You are not connected to an account. Click Connect Telegram from the website.");
+      await bot.sendMessage(chatId, "❌ Please connect your account first.");
       return;
     }
-
-    const cart = user.telegramCart || [];
 
     if (cart.length === 0) {
       await bot.sendMessage(chatId, "🛒 Your cart is empty.");
@@ -313,11 +286,19 @@ async function handleCheckout(chatId) {
 
     let total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     
+    user.telegramCart = cart.map(item => ({
+      product: item.productId,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity
+    }));
+    await user.save();
+    
     const frontendUrl = process.env.FRONTEND_URL || "http://127.0.0.1:3000";
-    const checkoutUrl = `${frontendUrl}/shipping?source=telegram&userId=${user._id}`;
+    const checkoutUrl = `${frontendUrl}/checkout?source=telegram&userId=${user._id}`;
     
     await bot.sendMessage(chatId, 
-      `💳 *Checkout*\n\nTotal: $${total.toFixed(2)}\n\n✅ Your cart has been saved!\n\nClick "Pay Now" to complete your order on the website.`,
+      `💳 *Checkout*\n\nTotal: $${total.toFixed(2)}\n\nComplete payment securely on our website:\n\n👉 ${checkoutUrl}`,
       {
         parse_mode: "Markdown",
         reply_markup: {
@@ -360,17 +341,8 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
       return;
     }
 
-    // Clear this chatId from any other users first to ensure only one user has it
-    await User.updateMany(
-      { telegramChatId: String(chatId), _id: { $ne: user._id } },
-      { $unset: { telegramChatId: "" } }
-    );
-    console.log(`🧹 Cleared chatId ${chatId} from other users`);
-
-    // Store as string to ensure consistency
-    user.telegramChatId = String(chatId);
+    user.telegramChatId = chatId;
     await user.save();
-    console.log(`✅ Saved telegramChatId: ${user.telegramChatId} for user: ${user.name}`);
 
     await bot.sendMessage(chatId, `✅ Connected! Welcome ${user.name}!`);
     await bot.sendMessage(chatId, "Main menu:", mainMenuKeyboard());
@@ -384,8 +356,8 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
 // /orders command
 bot.onText(/\/orders/, async (msg) => {
   const chatId = msg.chat.id;
-  const user = await User.findOne({ telegramChatId: String(chatId) });
-  if (!user) return bot.sendMessage(chatId, "⚠️ You are not connected to an account. Click Connect Telegram from the website.");
+  const user = await User.findOne({ telegramChatId: chatId });
+  if (!user) return bot.sendMessage(chatId, "❌ Connect your account first.");
 
   const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(5);
   if (!orders || orders.length === 0) return bot.sendMessage(chatId, "You have no orders yet.");
@@ -432,25 +404,22 @@ bot.on("callback_query", async (query) => {
   }
 
   if (data === "menu_show_orders") {
-    const user = await User.findOne({ telegramChatId: String(chatId) });
-    console.log(`[ORDERS] ChatId: ${chatId}, User: ${user ? `${user.name} (${user._id})` : 'NONE'}`);
-    if (!user) return bot.sendMessage(chatId, "⚠️ You are not connected to an account. Click Connect Telegram from the website.");
+    const user = await User.findOne({ telegramChatId: chatId });
+    if (!user) return bot.sendMessage(chatId, "❌ Connect your account first.");
 
     const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(5);
-    console.log(`[ORDERS] Found ${orders.length} orders for user ${user._id}`);
-    
-    if (!orders || orders.length === 0) return bot.sendMessage(chatId, "You have no orders yet.");
+    if (!orders || orders.length === 0) return bot.sendMessage(chatId, "No orders yet.");
 
-    await bot.sendMessage(chatId, `Your orders (${user.name}):`);
+    await bot.sendMessage(chatId, "Your orders:");
     for (const o of orders) {
-      await bot.sendMessage(chatId, `Order: ${o._id}\nStatus: ${o.orderStatus}\nTotal: $${o.totalPrice}\nUser: ${o.user}`, buildOrderInlineKeyboard(o));
+      await bot.sendMessage(chatId, `Order: ${o._id}\nStatus: ${o.orderStatus}\nTotal: $${o.totalPrice}`, buildOrderInlineKeyboard(o));
     }
     return;
   }
 
   if (data === "menu_track_order") {
-    const user = await User.findOne({ telegramChatId: String(chatId) });
-    if (!user) return bot.sendMessage(chatId, "⚠️ You are not connected to an account. Click Connect Telegram from the website.");
+    const user = await User.findOne({ telegramChatId: chatId });
+    if (!user) return bot.sendMessage(chatId, "❌ Connect your account first.");
 
     const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(5);
     if (!orders || orders.length === 0) return bot.sendMessage(chatId, "No orders yet.");
@@ -482,7 +451,7 @@ bot.on("callback_query", async (query) => {
 
   if (data.startsWith("feedback_") || data.startsWith("return_") || data.startsWith("issue_")) {
     const [type, orderId] = data.split("_");
-    const user = await User.findOne({ telegramChatId: String(chatId) });
+    const user = await User.findOne({ telegramChatId: chatId });
     pendingReplies.set(chatId, { type, orderId, userId: user ? user._id.toString() : null });
 
     if (type === "feedback") {
@@ -519,13 +488,7 @@ bot.on("callback_query", async (query) => {
   }
 
   if (data === "clear_cart") {
-    const user = await User.findOne({ telegramChatId: String(chatId) });
-    if (user) {
-      user.telegramCart = [];
-      await user.save();
-      console.log(`✅ Cleared cart in database for user: ${user.name}`);
-    }
-    
+    userCarts.delete(chatId);
     await bot.sendMessage(chatId, "🗑️ Cart cleared!", mainMenuKeyboard());
     return;
   }
@@ -590,8 +553,8 @@ bot.on("message", async (msg) => {
   
   // Order queries
   if (lower.includes("order") && (lower.includes("where") || lower.includes("track") || lower.includes("my"))) {
-    const user = await User.findOne({ telegramChatId: String(chatId) });
-    if (!user) return bot.sendMessage(chatId, "⚠️ You are not connected to an account. Click Connect Telegram from the website.");
+    const user = await User.findOne({ telegramChatId: chatId });
+    if (!user) return bot.sendMessage(chatId, "❌ Connect your account first.");
 
     const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(3);
     if (!orders || orders.length === 0) return bot.sendMessage(chatId, "No orders yet.");

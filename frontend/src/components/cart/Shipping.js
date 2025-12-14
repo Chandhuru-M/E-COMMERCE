@@ -1,10 +1,11 @@
 import { useDispatch, useSelector } from "react-redux";
-import { Fragment, useState } from "react";
+import { Fragment, useState, useEffect } from "react";
 import {countries} from 'countries-list'
-import { saveShippingInfo } from "../../slices/cartSlice";
-import { useNavigate } from "react-router-dom";
+import { saveShippingInfo, addCartItemSuccess } from "../../slices/cartSlice";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import CheckoutSteps from "./CheckoutStep";
 import { toast } from "react-toastify";
+import axios from 'axios';
 
 export const validateShipping = (shippingInfo, navigate) => {
    
@@ -24,6 +25,7 @@ export const validateShipping = (shippingInfo, navigate) => {
 
 export default function Shipping() {
     const {shippingInfo={} } = useSelector(state => state.cartState)
+    const {user} = useSelector(state => state.authState)
 
     const [address, setAddress] = useState(shippingInfo.address || '');
     const [city, setCity] = useState(shippingInfo.city || '');
@@ -34,6 +36,52 @@ export default function Shipping() {
     const countryList =  Object.values(countries);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    // Load Telegram cart if coming from Telegram
+    useEffect(() => {
+        const source = searchParams.get('source');
+        const userId = searchParams.get('userId');
+        
+        if (source === 'telegram' && userId && user && user._id === userId) {
+            loadTelegramCart();
+        }
+    }, [searchParams, user]);
+
+    const loadTelegramCart = async () => {
+        try {
+            const { data } = await axios.get('/api/v1/me', { withCredentials: true });
+            const telegramCart = data.user.telegramCart || [];
+            
+            console.log('Loading Telegram cart to website:', telegramCart);
+            
+            if (telegramCart.length > 0) {
+                // Fetch full product details for each item
+                for (const item of telegramCart) {
+                    try {
+                        const { data: productData } = await axios.get(`/api/v1/product/${item.product}`);
+                        const product = productData.product;
+                        
+                        // Add to Redux cart with full product details
+                        dispatch(addCartItemSuccess({
+                            product: product._id,
+                            name: product.name,
+                            price: product.price,
+                            image: product.images && product.images[0] ? product.images[0].image : '/images/default_product.png',
+                            stock: product.stock,
+                            quantity: item.quantity
+                        }));
+                    } catch (err) {
+                        console.error(`Error loading product ${item.product}:`, err);
+                    }
+                }
+                
+                toast.success('Cart loaded from Telegram! ✅', {position: toast.POSITION.BOTTOM_CENTER});
+            }
+        } catch (error) {
+            console.error('Error loading Telegram cart:', error);
+        }
+    };
 
     const submitHandler = (e) => {
         e.preventDefault();

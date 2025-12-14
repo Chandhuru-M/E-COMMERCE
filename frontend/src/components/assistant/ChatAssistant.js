@@ -412,7 +412,7 @@ export default function ChatAssistant() {
       const res = await axios.post(
         "/api/v1/sales/parse-search",
         { message: input, page: 1, limit: 6 },
-        { headers }
+        { headers, withCredentials: true }
       );
 
       const data = res.data;
