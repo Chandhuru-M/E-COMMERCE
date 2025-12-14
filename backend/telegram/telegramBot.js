@@ -147,30 +147,18 @@ async function notifyOrderStatusChanged(order) {
 async function handleProductSearch(chatId, query) {
   try {
     const searchTerm = query.trim();
-    const isBarcode = /^\d{8,}$/.test(searchTerm);
     
-    let products;
-    if (isBarcode) {
-      products = await Product.find({ barcode: searchTerm, stock: { $gt: 0 } }).limit(5);
-      if (products.length === 0) {
-        const allProducts = await Product.find({ barcode: searchTerm });
-        if (allProducts.length > 0) {
-          await bot.sendMessage(chatId, `❌ Not available in store\n✅ Available online\n\nPrice: $${allProducts[0].price}\n\nWould you like to order it online?`, {
-            reply_markup: {
-              inline_keyboard: [[{ text: "🛒 Order Online", callback_data: `addcart_${allProducts[0]._id}` }]]
-            }
-          });
-          return;
-        }
-      }
-    } else {
+    // First try barcode search (alphanumeric)
+    let products = await Product.find({ barcode: searchTerm }).limit(5);
+    
+    // If no barcode match, try text search
+    if (products.length === 0) {
       products = await Product.find({
         $or: [
           { name: { $regex: searchTerm, $options: 'i' } },
           { category: { $regex: searchTerm, $options: 'i' } },
           { description: { $regex: searchTerm, $options: 'i' } }
-        ],
-        stock: { $gt: 0 }
+        ]
       }).limit(5);
     }
 
