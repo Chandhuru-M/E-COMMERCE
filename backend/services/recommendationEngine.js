@@ -183,6 +183,12 @@ async function importFakeToDB(fakePayload) {
   if (!mapped.seller) mapped.seller = "FakeStore";
   if (!mapped.stock) mapped.stock = 20;
 
+  // Check if product already exists to avoid duplicates
+  const existing = await Product.findOne({ name: mapped.name });
+  if (existing) {
+    return { success: true, product: existing };
+  }
+
   // Create product
   const created = await Product.create(mapped);
   // clear relevant caches
@@ -190,8 +196,28 @@ async function importFakeToDB(fakePayload) {
   return { success: true, product: created };
 }
 
+// --- Resolve FakeStore ID to Real DB Product ---
+async function resolveFakeProduct(fakeId) {
+  if (!fakeId || typeof fakeId !== 'string' || !fakeId.startsWith("FAKESTORE_")) return null;
+  
+  const id = fakeId.replace("FAKESTORE_", "");
+  const url = FAKESTORE_BY_ID(id);
+  
+  try {
+    const fakeData = await fetchWithRetry(url, { retries: 2 });
+    if (!fakeData) return null;
+    
+    const result = await importFakeToDB(fakeData);
+    return result.success ? result.product : null;
+  } catch (err) {
+    console.error("Failed to resolve fake product:", err.message);
+    return null;
+  }
+}
+
 module.exports = {
   searchProducts,
   importFakeToDB,
-  getTrendingProductIds
+  getTrendingProductIds,
+  resolveFakeProduct
 };

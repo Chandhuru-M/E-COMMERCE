@@ -4,6 +4,7 @@ const Product = require("../models/productModel");
 const ErrorHandler = require("../utils/errorHandler");
 const { bot } = require("../telegram/telegramBot");
 const User = require("../models/userModel");
+const RecommendationEngine = require("../services/recommendationEngine");
 const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 
 
@@ -411,6 +412,23 @@ exports.newOrder = catchAsyncError(async (req, res) => {
     totalPrice,
     paymentInfo,
   } = req.body;
+
+  // Resolve FakeStore products in orderItems
+  if (orderItems && orderItems.length > 0) {
+    for (let i = 0; i < orderItems.length; i++) {
+      const item = orderItems[i];
+      if (typeof item.product === 'string' && item.product.startsWith("FAKESTORE_")) {
+        const realProduct = await RecommendationEngine.resolveFakeProduct(item.product);
+        if (realProduct) {
+          item.product = realProduct._id;
+        } else {
+          // If we can't resolve it, we might want to fail or skip. 
+          // Failing is safer to avoid data inconsistency.
+          throw new ErrorHandler(`Could not resolve product: ${item.name}`, 400);
+        }
+      }
+    }
+  }
 
   const order = await Order.create({
     orderItems,
