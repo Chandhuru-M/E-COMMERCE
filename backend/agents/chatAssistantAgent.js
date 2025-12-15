@@ -1,11 +1,15 @@
 // agents/chatAssistantAgent.js
 const ProductService = require("../services/productService");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const salesAgent = require("./salesAgent");
+const { tools, executeTool } = require("./toolDefinitions");
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
+// Use a model that supports function calling well
+const model = genAI.getGenerativeModel({ 
+  model: "gemini-flash-latest", // Updated to gemini-flash-latest as it is the supported model
+  tools: tools 
+});
 
 module.exports = {
   /**
@@ -42,70 +46,68 @@ module.exports = {
       // 2. Normal text-based message
       const userMessage = typeof message === "string" ? message : "";
       
-      // Use Gemini to decide which agent to use
-      const routingPrompt = `
-You are the Master Orchestrator for an e-commerce AI assistant.
-User message: "${userMessage}"
+      // Start a chat session
+      const chat = model.startChat({
+        history: [
+          {
+            role: "user",
+            parts: [{ text: "You are a helpful AI assistant for an e-commerce store called AURA. You can help with products, orders, and support. Always be friendly." }]
+          },
+          {
+            role: "model",
+            parts: [{ text: "Hello! I am AURA's AI assistant. How can I help you today?" }]
+          }
+        ],
+      });
 
-Your goal is to route this message to the correct specialized agent.
-Available Agents:
-1. "sales": For product search, recommendations, checking stock, buying, loyalty points, adding to cart. Also use this for GREETINGS (like "hi", "hello") to proactively recommend products.
-2. "support": For shipping info, return policy, contact support, general FAQs, order status/tracking.
-
-Return ONLY a JSON object with this format:
-{
-  "agent": "sales" | "support",
-  "reason": "brief reason"
-}
-`;
-
-      const result = await model.generateContent(routingPrompt);
-      const responseText = result.response.text();
+      // Send user message
+      const result = await chat.sendMessage(userMessage);
+      const response = await result.response;
       
-      // Clean up markdown if present
-      const jsonString = responseText.replace(/```json/g, "").replace(/```/g, "").trim();
-      let routingDecision;
+      // Check for function calls
+      const functionCalls = response.functionCalls();
       
-      try {
-        routingDecision = JSON.parse(jsonString);
-      } catch (e) {
-        console.error("Failed to parse routing decision:", responseText);
-        // Fallback to support
-        routingDecision = { agent: "support" };
-      }
+      let finalReply = "";
+      let productsFound = null;
 
-      console.log(`Routing decision: ${routingDecision.agent} (${routingDecision.reason})`);
-
-      // Route to the chosen agent
-      if (routingDecision.agent === "sales") {
-        const salesResponse = await salesAgent.handleUserMessage(userMessage, session);
-        return {
-          success: true,
-          ...salesResponse
-        };
-      } else {
-        // Handle support/general queries directly with Gemini
-        const supportPrompt = `
-You are a helpful Customer Support Agent for an e-commerce store called AURA.
-User message: "${userMessage}"
-
-Provide a helpful, friendly, and concise response.
-If they ask about orders, tell them to check 'My Orders'.
-If they ask about shipping, say we ship worldwide in 3-5 days.
-If they ask about returns, say we accept returns within 7 days.
-If they say hello, welcome them.
-
-Return ONLY the text response.
-`;
-        const supportResult = await model.generateContent(supportPrompt);
-        const supportReply = supportResult.response.text();
+      if (functionCalls && functionCalls.length > 0) {
+        // Execute all requested functions
+        const functionResponses = [];
         
-        return {
-          success: true,
-          reply: supportReply,
-          session
-        };
+        for (const call of functionCalls) {
+          const functionName = call.name;
+          const args = call.args;
+          
+          // Execute the tool
+          const toolResult = await executeTool(functionName, args, session);
+          
+          // Capture products if search was performed (for UI display)
+          if (functionName === "search_products" && Array.isArray(toolResult)) {
+            productsFound = toolResult;
+          }
+
+          functionResponses.push({
+            functionResponse: {
+              name: functionName,
+              response: { result: toolResult }
+            }
+          });
+        }
+
+        // Send tool results back to Gemini to generate final response
+        const finalResult = await chat.sendMessage(functionResponses);
+        finalReply = finalResult.response.text();
+      } else {
+        // No tools needed, just text response
+        finalReply = response.text();
       }
+
+      return {
+        success: true,
+        reply: finalReply,
+        products: productsFound, // Pass products to frontend if found
+        session
+      };
 
     } catch (error) {
       console.error("ChatAssistant error:", error);
