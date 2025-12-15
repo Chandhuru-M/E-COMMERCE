@@ -121,4 +121,45 @@ const orderSchema = mongoose.Schema({
 
 let orderModel = mongoose.model('Order', orderSchema);
 
+// Track changes to orderStatus/deliveryStatus and notify Telegram
+orderSchema.pre('save', function (next) {
+  this._statusChanged = this.isModified('orderStatus') || this.isModified('deliveryStatus');
+  if (this._statusChanged) {
+    console.log(`🟢 [ORDER HOOK] status change detected for order ${this._id} (orderStatus=${this.orderStatus}, deliveryStatus=${this.deliveryStatus})`);
+  }
+  next();
+});
+
+orderSchema.post('save', function (doc) {
+  try {
+    if (this._statusChanged) {
+      console.log(`🟡 [ORDER HOOK] calling notifyOrderStatusChanged for ${doc._id}`);
+      const notifier = require('../telegram/telegramBot').notifyOrderStatusChanged;
+      if (typeof notifier === 'function') notifier(doc).catch((e) => { console.error('Notifier error (post save):', e && e.message ? e.message : e); });
+    } else {
+      console.log(`⚪ [ORDER HOOK] no status change for ${doc._id}`);
+    }
+  } catch (e) {}
+});
+
+// Handle findOneAndUpdate scenarios — attempt to detect status fields in the update
+orderSchema.post('findOneAndUpdate', async function (doc) {
+  try {
+    if (!doc) return;
+    const update = this.getUpdate && this.getUpdate();
+    if (!update) return;
+
+    const direct = update.orderStatus || update.deliveryStatus;
+    const setObj = update.$set || {};
+    const changed = Boolean(direct || setObj.orderStatus || setObj.deliveryStatus);
+    if (changed) {
+      console.log(`🟡 [ORDER HOOK] findOneAndUpdate detected status change for ${doc._id}`);
+      const notifier = require('../telegram/telegramBot').notifyOrderStatusChanged;
+      if (typeof notifier === 'function') await notifier(doc).catch((e) => { console.error('Notifier error (findOneAndUpdate):', e && e.message ? e.message : e); });
+    } else {
+      console.log(`⚪ [ORDER HOOK] findOneAndUpdate no status change for ${doc._id}`);
+    }
+  } catch (e) {}
+});
+
 module.exports = orderModel;

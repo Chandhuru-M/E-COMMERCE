@@ -223,14 +223,24 @@ async function notifyOrderStatusChanged(order) {
   if (!orderDoc || typeof orderDoc === "string") {
     orderDoc = await Order.findById(order);
   }
-  if (!orderDoc) return false;
+  if (!orderDoc) {
+    console.log('⚪ notifyOrderStatusChanged called but order not found');
+    return false;
+  }
 
   const userId = orderDoc.user ? orderDoc.user.toString() : null;
-  if (!userId) return false;
+  console.log(`🔔 notifyOrderStatusChanged for order ${orderDoc._id}; userId=${userId}; deliveryStatus=${orderDoc.deliveryStatus}; orderStatus=${orderDoc.orderStatus}`);
+
+  if (!userId) {
+    console.log('⚪ No user associated with order — skipping Telegram notification');
+    return false;
+  }
 
   const title = `Order ${orderDoc._id} status update`;
   const text = `Status: ${orderDoc.deliveryStatus || orderDoc.orderStatus}\nTotal: $${orderDoc.totalPrice}\nOrder items: ${orderDoc.orderItems ? orderDoc.orderItems.length : 0}`;
-  return sendOrderUpdateToUser(userId, title, text, orderDoc);
+  const result = await sendOrderUpdateToUser(userId, title, text, orderDoc);
+  console.log(`🔔 sendOrderUpdateToUser result: ${result}`);
+  return result;
 }
 
 // Shopping functions

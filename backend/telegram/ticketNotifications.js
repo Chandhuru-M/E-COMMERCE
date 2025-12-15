@@ -32,8 +32,8 @@ const sendTicketNotification = async ({
     adminChatIds = admins.map(admin => admin.telegramChatId);
 
     if (!adminChatIds.length) {
-      console.warn('admin telegram connections found');
-      return false;
+      console.warn('⚠️ No admin telegram connections found — admin notifications will be skipped');
+      // Do not return early — continue to process customer notifications (ticket replies/resolutions)
     }
 
     switch (type) {

@@ -2,7 +2,7 @@ const catchAsyncError = require("../middlewares/catchAsyncError");
 const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const ErrorHandler = require("../utils/errorHandler");
-const { bot } = require("../telegram/telegramBot");
+const telegramBot = require("../telegram/telegramBot");
 const User = require("../models/userModel");
 const RecommendationEngine = require("../services/recommendationEngine");
 const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
@@ -367,10 +367,17 @@ const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 // ==========================================================
 async function sendTelegram(userId, text, buttons = null) {
   try {
-    if (!bot) return;
+    const bot = telegramBot.bot;
+    if (!bot) {
+      console.log('🔴 Telegram bot not initialized yet');
+      return;
+    }
 
     const user = await User.findById(userId);
-    if (!user || !user.telegramChatId) return;
+    if (!user || !user.telegramChatId) {
+      console.log('🔴 Telegram not linked for user', userId);
+      return;
+    }
 
     const options = {
       parse_mode: "Markdown",
