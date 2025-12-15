@@ -211,13 +211,14 @@
 //   );
 // }
 // frontend/src/components/chat/ChatAssistant.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import "../../ChatAssistant.css";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addCartItem } from "../../actions/cartActions";
 import { Html5Qrcode } from 'html5-qrcode';
+import VoiceChat from "./VoiceChat";
 
 // Payment Form Component
 function PaymentForm({ onSubmit }) {
@@ -380,11 +381,37 @@ export default function ChatAssistant() {
   const [isLoading, setIsLoading] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [html5QrCodeRef, setHtml5QrCodeRef] = useState(null);
+  const [isListening, setIsListening] = useState(false);
+  const [lang, setLang] = useState("ta-IN");
+  const recognitionRef = useRef(null);
 
   const { isAuthenticated } = useSelector(state => state.authState);
   const { items: cartItems } = useSelector(state => state.cartState);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  // Voice Recognition Setup
+  useEffect(() => {
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = lang;
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onend = () => setIsListening(false);
+
+    recognition.onresult = (event) => {
+      const voiceText = event.results[0][0].transcript;
+      setInput(voiceText);
+    };
+
+    recognitionRef.current = recognition;
+  }, [lang]);
 
   function pushBot(text, extras = {}) {
     const botMessage = { sender: "bot", text, ...extras };
@@ -1078,6 +1105,13 @@ export default function ChatAssistant() {
           </div>
 
           <div className="chat-body">
+            <div className="lang-select">
+              <select value={lang} onChange={(e) => setLang(e.target.value)}>
+                <option value="ta-IN">தமிழ்</option>
+                <option value="hi-IN">हिंदी</option>
+                <option value="en-US">English</option>
+              </select>
+            </div>
             <div id="qr-reader" style={{ width: '100%', marginBottom: '12px', display: 'none', borderRadius: '8px', overflow: 'hidden' }}></div>
             {messages.length === 0 && (
               <div className="chat-welcome">
@@ -1109,6 +1143,14 @@ export default function ChatAssistant() {
             />
             <button onClick={sendMessage} disabled={isLoading}>
               {isLoading ? "..." : "Send"}
+            </button>
+            <button
+              onClick={() => recognitionRef.current?.start()}
+              className="mic-btn"
+              title="Voice Input"
+              disabled={isLoading}
+            >
+              {isListening ? "🎙" : "🎤"}
             </button>
           </div>
         </div>
