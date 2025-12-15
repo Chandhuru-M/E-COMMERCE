@@ -48,7 +48,9 @@ export default function Header () {
                       }
                       <Dropdown.Item onClick={() => {navigate('/myprofile')}} className='text-dark'><i className="fa fa-user"></i> Profile</Dropdown.Item>
                       { user.role === 'user' && <Dropdown.Item onClick={() => {navigate('/orders')}} className='text-dark'><i className="fa fa-shopping-bag"></i> Orders</Dropdown.Item> }
-                      <Dropdown.Item as="a" href={`https://t.me/shop_assistant_123_bot?start=${user._id}`} target="_blank" rel="noreferrer" className='text-info'><i className="fab fa-telegram"></i> Connect Telegram</Dropdown.Item>
+                      { user.role === 'merchant_admin' && <Dropdown.Item onClick={() => {navigate('/merchant/support')}} className='text-warning'><i className="fa fa-headset"></i> Support Center</Dropdown.Item> }
+                      { user.role === 'user' && <Dropdown.Item onClick={() => {navigate('/support')}} className='text-warning'><i className="fa fa-question-circle"></i> Support</Dropdown.Item> }
+                      { user.role === 'user' && <Dropdown.Item as="a" href={`https://t.me/shop_assistant_123_bot?start=${user._id}`} target="_blank" rel="noreferrer" className='text-info'><i className="fab fa-telegram"></i> Connect Telegram</Dropdown.Item> }
                       <Dropdown.Item onClick={logoutHandler} className='text-danger'><i className="fa fa-sign-out-alt"></i> Logout</Dropdown.Item>
                   </Dropdown.Menu>
               </Dropdown>
@@ -57,8 +59,12 @@ export default function Header () {
           :
             <Link to="/login"  className="btn" id="login_btn">Login</Link>
           }
-          <Link to="/cart"><span id="cart" className="ml-3">Cart</span></Link>
-          <span className="ml-1" id="cart_count">{cartItems.length}</span>
+          { user && user.role === 'user' && (
+            <>
+              <Link to="/cart"><span id="cart" className="ml-3">Cart</span></Link>
+              <span className="ml-1" id="cart_count">{cartItems.length}</span>
+            </>
+          ) }
         </div>
     </nav>
     )

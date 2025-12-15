@@ -13,6 +13,17 @@ const server = http.createServer(app);
 const io = createSocketServer(server);
 global.io = io; // optional convenience
 
+// Start Telegram bot polling (after app is initialized but only once)
+if (process.env.TELEGRAM_BOT_TOKEN) {
+  try {
+    const { startPolling } = require('./telegram/telegramBot');
+    startPolling();
+    console.log('✅ Telegram bot polling will start after server initialization');
+  } catch (err) {
+    console.error('⚠️ Error loading Telegram bot:', err.message);
+  }
+}
+
 server.listen(PORT, () => {
     console.log(`My Server listening to the port: ${PORT} in ${process.env.NODE_ENV}`);
 });

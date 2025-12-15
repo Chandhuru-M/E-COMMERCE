@@ -694,5 +694,11 @@ module.exports = {
   bot,
   sendOrderUpdateToUser,
   notifyOrderStatusChanged,
-  buildOrderInlineKeyboard
+  buildOrderInlineKeyboard,
+  startPolling: () => {
+    // Bot already started with polling: true above
+    // This function is kept for compatibility with server.js
+    console.log("✅ Telegram bot polling already active");
+    return true;
+  }
 };

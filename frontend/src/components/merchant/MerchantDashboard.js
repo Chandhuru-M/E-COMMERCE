@@ -78,6 +78,22 @@ export default function MerchantDashboard() {
                 </div>
               </div>
             </div>
+
+            {/* Support Center Card */}
+            <div className="col-md-6 mb-4">
+              <div className="card border-0 shadow-sm h-100">
+                <div className="card-body text-center p-5">
+                  <i className="fa fa-headset fa-4x text-danger mb-3"></i>
+                  <h3 className="card-title">Support Center</h3>
+                  <p className="card-text text-muted">
+                    Get help with payments, shipping, and store management
+                  </p>
+                  <Link to="/merchant/support" className="btn btn-danger btn-lg mt-3">
+                    <i className="fa fa-headset mr-2"></i> Get Support
+                  </Link>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

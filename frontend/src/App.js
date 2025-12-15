@@ -56,6 +56,11 @@ import MerchantNewProduct from './components/merchant/MerchantNewProduct';
 import MerchantUpdateProduct from './components/merchant/MerchantUpdateProduct';
 import MerchantRequests from './components/admin/MerchantRequests';
 
+// Help Desk components
+import HelpDesk from './pages/HelpDesk/HelpDesk';
+import MerchantHelpDesk from './pages/HelpDesk/MerchantHelpDesk';
+import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
+
 // Configure axios to send credentials (cookies) with every request
 axios.defaults.withCredentials = true;
 
@@ -131,6 +136,11 @@ function App() {
                       
                       {/* POS Route - for merchants and staff */}
                       <Route path='/pos' element={<ProtectedRoute><POSSystem/></ProtectedRoute>} />
+                      
+                      {/* Help Desk Routes */}
+                      <Route path='/support' element={<ProtectedRoute><HelpDesk/></ProtectedRoute>} />
+                      <Route path='/merchant/support' element={<ProtectedRoute><MerchantHelpDesk/></ProtectedRoute>} />
+                      <Route path='/admin/support' element={<ProtectedRoute isAdmin={true}><AdminDashboard/></ProtectedRoute>} />
                   </Routes>
                 </div>
 

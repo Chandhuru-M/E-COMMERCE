@@ -641,7 +641,11 @@ export default function ChatAssistant() {
     }
 
     const scannerDiv = document.getElementById('qr-reader');
-    if (!scannerDiv) return;
+    if (!scannerDiv) {
+      console.error('QR reader div not found');
+      pushBot('❌ Scanner component not found. Please refresh the page.');
+      return;
+    }
 
     try {
       setIsScanning(true);
@@ -649,11 +653,13 @@ export default function ChatAssistant() {
       pushBot('📷 Opening camera... Please allow camera access when prompted.');
       pushBot('📌 Tips:\n• Hold barcode 10-15cm from camera\n• Ensure good lighting\n• Keep barcode horizontal\n• Wait for green scanning box');
 
+      console.log('Initializing Html5Qrcode scanner...');
       const html5QrCode = new Html5Qrcode('qr-reader');
       setHtml5QrCodeRef(html5QrCode);
 
       let isProcessing = false;
       
+      console.log('Starting camera...');
       await html5QrCode.start(
         { facingMode: 'environment' },
         { 
@@ -693,6 +699,11 @@ export default function ChatAssistant() {
       );
     } catch (err) {
       console.error('Scanner error:', err);
+      console.error('Error details:', {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
       setIsScanning(false);
       
       if (scannerDiv) {
@@ -705,8 +716,10 @@ export default function ChatAssistant() {
         pushBot('❌ No camera found on your device.');
       } else if (err.name === 'NotReadableError') {
         pushBot('❌ Camera is already in use by another application.');
+      } else if (err.name === 'NotSupportedError') {
+        pushBot('❌ Your browser doesn\'t support camera access. Please try Chrome, Firefox, or Safari.');
       } else {
-        pushBot('❌ Failed to start camera. Please check permissions and try again.');
+        pushBot(`❌ Failed to start camera: ${err.message || 'Unknown error'}. Please check permissions and try again.`);
       }
     }
   };
@@ -966,6 +979,13 @@ export default function ChatAssistant() {
         <div className={`chat-message ${msg.sender}`}>{msg.text}</div>
       </div>
     );
+  }
+
+  const user = useSelector((state) => state.authState.user);
+  
+  // Don't show chatbot for admin users
+  if (user && (user.role === 'admin' || user.role === 'merchant_admin')) {
+    return null;
   }
 
   return (
