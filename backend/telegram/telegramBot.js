@@ -4,6 +4,7 @@ const User = require("../models/userModel");
 const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const salesAgent = require("../services/salesAgent");
+const RecommendationEngine = require("../services/recommendationEngine");
 const path = require("path");
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -207,7 +208,13 @@ async function handleProductSearch(chatId, query) {
 
 async function addToCart(chatId, productId) {
   try {
-    const product = await Product.findById(productId);
+    let product;
+    if (productId.startsWith("FAKESTORE_")) {
+      product = await RecommendationEngine.resolveFakeProduct(productId);
+    } else {
+      product = await Product.findById(productId);
+    }
+
     if (!product) {
       await bot.sendMessage(chatId, "❌ Product not found.");
       return;
@@ -221,13 +228,14 @@ async function addToCart(chatId, productId) {
     }
 
     let cart = user.telegramCart || [];
-    const existing = cart.find(item => item.product.toString() === productId);
+    const realProductId = product._id.toString();
+    const existing = cart.find(item => item.product.toString() === realProductId);
     
     if (existing) {
       existing.quantity += 1;
     } else {
       cart.push({
-        product: productId,
+        product: product._id,
         name: product.name,
         price: product.price,
         quantity: 1
