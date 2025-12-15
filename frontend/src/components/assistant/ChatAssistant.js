@@ -218,7 +218,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { addCartItem } from "../../actions/cartActions";
 import { Html5Qrcode } from 'html5-qrcode';
-import VoiceChat from "./VoiceChat";
+import VoiceChat from "./VoiceChat.js";
 
 // Payment Form Component
 function PaymentForm({ onSubmit }) {

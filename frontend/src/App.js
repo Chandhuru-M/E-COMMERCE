@@ -58,9 +58,9 @@ import MerchantUpdateProduct from './components/merchant/MerchantUpdateProduct';
 import MerchantRequests from './components/admin/MerchantRequests';
 
 // Help Desk components
-import HelpDesk from './pages/HelpDesk/HelpDesk';
-import MerchantHelpDesk from './pages/HelpDesk/MerchantHelpDesk';
-import AdminDashboard from './pages/AdminDashboard/AdminDashboard';
+import HelpDesk from './pages/HelpDesk/HelpDesk.jsx';
+import MerchantHelpDesk from './pages/HelpDesk/MerchantHelpDesk.jsx';
+import AdminDashboard from './pages/AdminDashboard/AdminDashboard.jsx';
 
 // Configure axios to send credentials (cookies) with every request
 axios.defaults.withCredentials = true;
