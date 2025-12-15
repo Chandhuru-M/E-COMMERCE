@@ -4,12 +4,16 @@ const axios = require("axios");
 module.exports = {
   getRecommendations: async (query, userHistory) => {
     const q = query.toLowerCase();
+    // Simple singularization for better matching (e.g. "watches" -> "watch")
+    const stem = q.replace(/e?s$/, ""); 
+    const regex = new RegExp(stem, "i");
 
     // 🔍 1. Fetch relevant products from DB
     const products = await Product.find({
       $or: [
-        { name: { $regex: q, $options: "i" } },
-        { category: { $regex: q, $options: "i" } }
+        { name: { $regex: regex } },
+        { category: { $regex: regex } },
+        { description: { $regex: regex } }
       ]
     }).lean();
 
@@ -28,7 +32,7 @@ module.exports = {
       const trendingCategories = ["watch", "tshirt", "shoes"];
       const trendingColors = ["black", "blue", "white"];
 
-      if (trendingCategories.includes(product.category.toLowerCase()))
+      if (trendingCategories.some(c => regex.test(c)))
         score += 0.2;
 
       if (trendingColors.includes(product.color?.toLowerCase()))
@@ -43,47 +47,67 @@ module.exports = {
     // Get top local products (up to 5)
     let finalProducts = scored.slice(0, 5).map(item => item.product);
 
-    // 3. If less than 5, fetch from Fake Store API
+    // 3. If less than 5, fetch from External APIs
     if (finalProducts.length < 5) {
       try {
-        const { data: externalProducts } = await axios.get('https://fakestoreapi.com/products');
+        // Try DummyJSON first as it has more variety (especially watches)
+        const { data: dummyData } = await axios.get(`https://dummyjson.com/products/search?q=${stem}`);
         
-        // Filter relevant external products
-        const relevantExternal = externalProducts.filter(p => 
-          p.title.toLowerCase().includes(q) || 
-          p.category.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q)
-        );
+        if (dummyData && dummyData.products) {
+           const mapDummyProduct = (p) => ({
+            _id: `dummy_${p.id}`,
+            name: p.title,
+            price: p.price,
+            description: p.description,
+            images: p.images && p.images.length > 0 ? p.images.map(img => ({ image: img })) : [{ image: p.thumbnail }],
+            category: p.category,
+            ratings: p.rating || 0,
+            stock: p.stock || 50,
+            source: 'external'
+          });
 
-        // Map to local structure
-        const mapExternalProduct = (p) => ({
-          _id: `ext_${p.id}`,
-          name: p.title,
-          price: p.price,
-          description: p.description,
-          images: [{ image: p.image }],
-          category: p.category,
-          ratings: p.rating?.rate || 0,
-          stock: 100, // Assume stock for external items
-          source: 'external'
-        });
-
-        // Add relevant products first
-        for (const p of relevantExternal) {
-          if (finalProducts.length < 5) {
-            // Avoid duplicates if by chance ID matches or something (unlikely with ext_ prefix)
-            finalProducts.push(mapExternalProduct(p));
+          for (const p of dummyData.products) {
+            if (finalProducts.length < 5) {
+               // Check for duplicates by name to be safe
+               if (!finalProducts.some(fp => fp.name === p.title)) {
+                  finalProducts.push(mapDummyProduct(p));
+               }
+            } else {
+              break;
+            }
           }
         }
 
-        // If still less than 5, fill with other external products
+        // If STILL less than 5, try FakeStoreAPI as backup
         if (finalProducts.length < 5) {
-          const otherExternal = externalProducts.filter(p => !relevantExternal.includes(p));
-          for (const p of otherExternal) {
+          const { data: externalProducts } = await axios.get('https://fakestoreapi.com/products');
+          
+          // Filter relevant external products
+          const relevantExternal = externalProducts.filter(p => 
+            regex.test(p.title) || 
+            regex.test(p.category) ||
+            regex.test(p.description)
+          );
+
+          // Map to local structure
+          const mapExternalProduct = (p) => ({
+            _id: `ext_${p.id}`,
+            name: p.title,
+            price: p.price,
+            description: p.description,
+            images: [{ image: p.image }],
+            category: p.category,
+            ratings: p.rating?.rate || 0,
+            stock: 100, // Assume stock for external items
+            source: 'external'
+          });
+
+          // Add relevant products first
+          for (const p of relevantExternal) {
             if (finalProducts.length < 5) {
-              finalProducts.push(mapExternalProduct(p));
-            } else {
-              break;
+               if (!finalProducts.some(fp => fp.name === p.title)) {
+                  finalProducts.push(mapExternalProduct(p));
+               }
             }
           }
         }
