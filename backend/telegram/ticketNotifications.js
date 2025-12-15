@@ -32,7 +32,7 @@ const sendTicketNotification = async ({
     adminChatIds = admins.map(admin => admin.telegramChatId);
 
     if (!adminChatIds.length) {
-      console.warn('⚠️ No admin telegram connections found');
+      console.warn('admin telegram connections found');
       return false;
     }
 

@@ -12,6 +12,7 @@ const Product = require("../models/productModel");
 const salesAgent = require("../services/salesAgent");
 const RecommendationEngine = require("../services/recommendationEngine");
 const path = require("path");
+const https = require('https');
 
 const token = process.env.TELEGRAM_BOT_TOKEN;
 if (!token) {
@@ -25,6 +26,30 @@ if (!token) {
   return;
 }
 
+async function deleteWebhookIfForced() {
+  if (process.env.TELEGRAM_FORCE_POLLING !== 'true') return;
+  const url = `https://api.telegram.org/bot${token}/deleteWebhook`;
+  return new Promise((resolve) => {
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data || '{}');
+          if (json.ok) console.log('✅ Telegram webhook deleted (TELEGRAM_FORCE_POLLING=true)');
+          else console.warn('⚠️ Delete webhook response:', json);
+        } catch (e) {
+          console.warn('⚠️ Could not parse deleteWebhook response', e);
+        }
+        resolve();
+      });
+    }).on('error', (err) => {
+      console.error('❌ Error deleting webhook:', err && err.message ? err.message : err);
+      resolve();
+    });
+  });
+}
+
 // Export a placeholder early to reduce circular dependency warnings
 module.exports = module.exports || {};
 
@@ -36,24 +61,34 @@ if (global.telegramBot) {
   console.log("⚠️ Using existing bot instance (preventing duplicate polling)");
   bot = global.telegramBot;
   module.exports.bot = bot;
+  try { registerBotHandlers(); } catch (e) { console.warn('Failed to register handlers on existing bot:', e); }
 } else {
-  // Create new bot instance only once
-  bot = new TelegramBot(token, { polling: { interval: 300, allowedUpdates: ['message', 'callback_query'] } });
-  global.telegramBot = bot;
-  module.exports.bot = bot;
-  
-  // Add error handling for polling
-  bot.on('polling_error', (err) => {
-    if (err.code === 'ETELEGRAM' && err.message.includes('409')) {
-      console.error('❌ [POLLING_ERROR] 409 Conflict - Multiple bot instances detected!');
-      console.error('    Make sure to stop any other running instances of this bot');
-      console.error('    Error:', err.message);
-    } else {
-      console.error('❌ [POLLING_ERROR]', err.message);
+  (async () => {
+    try {
+      await deleteWebhookIfForced();
+    } catch (e) {
+      console.warn('Warning while attempting to delete webhook:', e);
     }
-  });
-  
-  console.log("✅ BOT LOADED - Polling active");
+
+    // Create new bot instance only once
+    bot = new TelegramBot(token, { polling: { interval: 300, allowedUpdates: ['message', 'callback_query'] } });
+    global.telegramBot = bot;
+    module.exports.bot = bot;
+    try { registerBotHandlers(); } catch (e) { console.warn('Failed to register handlers on new bot:', e); }
+    
+    // Add error handling for polling
+    bot.on('polling_error', (err) => {
+      if (err.code === 'ETELEGRAM' && err.message.includes('409')) {
+        console.error('❌ [POLLING_ERROR] 409 Conflict - Multiple bot instances detected!');
+        console.error('    Make sure to stop any other running instances of this bot');
+        console.error('    Error:', err.message);
+      } else {
+        console.error('❌ [POLLING_ERROR]', err.message);
+      }
+    });
+    
+    console.log("✅ BOT LOADED - Polling active");
+  })();
 }
 
 // In-memory state (queue per chat to allow multiple pending flows)
@@ -411,11 +446,16 @@ async function handleCheckout(chatId) {
 }
 
 // ============================================
-// TELEGRAM BOT COMMAND HANDLERS (ONE TIME ONLY!)
+// TELEGRAM BOT COMMAND HANDLERS (registered when bot exists)
 // ============================================
 
-// /start command
-bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
+let __handlersRegistered = false;
+function registerBotHandlers() {
+  if (!bot || __handlersRegistered) return;
+  __handlersRegistered = true;
+
+  // /start command
+  bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   const chatId = msg.chat.id;
   const payload = match && match[1] ? match[1].trim() : null;
 
@@ -478,10 +518,10 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
     console.error("❌ Start command error:", err);
     await bot.sendMessage(chatId, `❌ Error: ${err.message}`);
   }
-});
+  });
 
-// /orders command
-bot.onText(/\/orders/, async (msg) => {
+  // /orders command
+  bot.onText(/\/orders/, async (msg) => {
   const chatId = msg.chat.id;
   const user = await User.findOne({ telegramChatId: String(chatId) });
   if (!user) return bot.sendMessage(chatId, "⚠️ You are not connected to an account. Click Connect Telegram from the website.");
@@ -494,10 +534,10 @@ bot.onText(/\/orders/, async (msg) => {
     const text = `Order: ${o._id}\nStatus: ${o.deliveryStatus || o.orderStatus}\nTotal: $${o.totalPrice}`;
     await bot.sendMessage(chatId, text, buildOrderInlineKeyboard(o));
   }
-});
+  });
 
-// /help command
-bot.onText(/\/help/, async (msg) => {
+  // /help command
+  bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
   const frontendUrl = process.env.FRONTEND_URL || "http://127.0.0.1:3000";
   const supportUrl = `${frontendUrl}/support`;
@@ -507,12 +547,12 @@ bot.onText(/\/help/, async (msg) => {
     `I can help you shop and track orders!\n\nFor detailed help, visit: ${supportUrl}\n\nOr use the menu below to continue.`,
     mainMenuKeyboard()
   );
-});
+  });
 
 // ============================================
 // SINGLE CALLBACK QUERY HANDLER
 // ============================================
-bot.on("callback_query", async (query) => {
+  bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
   const data = query.data;
   
@@ -719,12 +759,12 @@ bot.on("callback_query", async (query) => {
   }
 
   await bot.sendMessage(chatId, "Unknown action.", mainMenuKeyboard());
-});
+  });
 
 // ============================================
 // SINGLE MESSAGE HANDLER
 // ============================================
-bot.on("message", async (msg) => {
+  bot.on("message", async (msg) => {
   if (!msg || !msg.text || msg.text.startsWith("/")) return;
   
   const chatId = msg.chat.id;
@@ -1020,7 +1060,9 @@ bot.on("message", async (msg) => {
     console.error("AI handler error:", err);
     await bot.sendMessage(chatId, "Sorry, I had trouble understanding.", mainMenuKeyboard());
   }
-});
+  });
+
+} // end registerBotHandlers
 
 module.exports = {
   bot,
