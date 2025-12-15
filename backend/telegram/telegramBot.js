@@ -56,8 +56,27 @@ if (global.telegramBot) {
   console.log("✅ BOT LOADED - Polling active");
 }
 
-// In-memory state
+// In-memory state (queue per chat to allow multiple pending flows)
 const pendingReplies = new Map();
+
+function pushPending(chatId, ctx) {
+  const q = pendingReplies.get(chatId) || [];
+  q.push(ctx);
+  pendingReplies.set(chatId, q);
+}
+
+function getCurrentPending(chatId) {
+  const q = pendingReplies.get(chatId);
+  return q && q.length ? q[0] : null;
+}
+
+function popPending(chatId) {
+  const q = pendingReplies.get(chatId);
+  if (!q) return;
+  q.shift();
+  if (q.length) pendingReplies.set(chatId, q);
+  else pendingReplies.delete(chatId);
+}
 
 // Helper functions
 function buildOrderInlineKeyboard(order) {
@@ -85,7 +104,8 @@ function mainMenuKeyboard() {
         [{ text: "🔍 Search Products", callback_data: "menu_search" }, { text: "🛒 View Cart", callback_data: "menu_cart" }],
         [{ text: "📦 Show My Orders", callback_data: "menu_show_orders" }],
         [{ text: "🚚 Track an Order", callback_data: "menu_track_order" }],
-        [{ text: "📷 Scan Barcode", callback_data: "menu_barcode" }, { text: "ℹ️ Help", callback_data: "menu_help" }]
+        [{ text: "📷 Scan Barcode", callback_data: "menu_barcode" }, { text: "ℹ️ Help", callback_data: "menu_help" }],
+        [{ text: "💌 Compliment", callback_data: "menu_compliment" }, { text: "✉️ Contact Support", callback_data: "menu_support" }]
       ]
     }
   };
@@ -478,7 +498,15 @@ bot.onText(/\/orders/, async (msg) => {
 
 // /help command
 bot.onText(/\/help/, async (msg) => {
-  await bot.sendMessage(msg.chat.id, "I can help you shop and track orders!", mainMenuKeyboard());
+  const chatId = msg.chat.id;
+  const frontendUrl = process.env.FRONTEND_URL || "http://127.0.0.1:3000";
+  const supportUrl = `${frontendUrl}/support`;
+
+  await bot.sendMessage(
+    chatId,
+    `I can help you shop and track orders!\n\nFor detailed help, visit: ${supportUrl}\n\nOr use the menu below to continue.`,
+    mainMenuKeyboard()
+  );
 });
 
 // ============================================
@@ -494,7 +522,7 @@ bot.on("callback_query", async (query) => {
 
   // Menu buttons
   if (data === "menu_search") {
-    pendingReplies.set(chatId, { type: "search" });
+    pushPending(chatId, { type: "search" });
     await bot.sendMessage(chatId, "🔍 *Search Products*\n\nEnter product name or barcode:", { parse_mode: "Markdown" });
     return;
   }
@@ -505,8 +533,21 @@ bot.on("callback_query", async (query) => {
   }
 
   if (data === "menu_barcode") {
-    pendingReplies.set(chatId, { type: "search" });
+    pushPending(chatId, { type: "search" });
     await bot.sendMessage(chatId, "📷 Enter barcode number:", { parse_mode: "Markdown" });
+    return;
+  }
+
+  if (data === "menu_compliment") {
+    pushPending(chatId, { type: 'compliment' });
+    await bot.sendMessage(chatId, "💌 Please write your compliment for our team or product. We appreciate it!", { parse_mode: 'Markdown' });
+    return;
+  }
+
+  if (data === "menu_support") {
+    // Start multi-step support ticket creation: ask for subject first
+    pushPending(chatId, { type: 'support_subject' });
+    await bot.sendMessage(chatId, "✉️ Please enter a short subject for your support request:", { parse_mode: 'Markdown' });
     return;
   }
 
@@ -557,7 +598,40 @@ bot.on("callback_query", async (query) => {
   }
 
   if (data === "menu_help") {
-    await bot.sendMessage(chatId, "I help you shop and track orders!", mainMenuKeyboard());
+    const frontendUrl = process.env.FRONTEND_URL || "http://127.0.0.1:3000";
+    const supportUrl = `${frontendUrl}/support`;
+
+    // Build keyboard: support button first, then existing main menu rows
+    const mainKeyboard = mainMenuKeyboard();
+    const combinedKeyboard = {
+      reply_markup: {
+        inline_keyboard: [
+          [{ text: "🛠️ Open Support", url: supportUrl }],
+          ...mainKeyboard.reply_markup.inline_keyboard
+        ]
+      }
+    };
+
+    await bot.sendMessage(
+      chatId,
+      `I can help you shop and track orders!\n\nTap 'Open Support' to visit our help page.`,
+      combinedKeyboard
+    );
+
+    return;
+  }
+
+  // Ticket reply action for admins
+  if (data.startsWith("ticket_reply_")) {
+    const ticketId = data.replace("ticket_reply_", "");
+    const admin = await User.findOne({ telegramChatId: String(chatId), role: 'admin' });
+    if (!admin) {
+      await bot.sendMessage(chatId, "⚠️ You must be an admin (connected) to reply to tickets.");
+      return;
+    }
+
+    pushPending(chatId, { type: 'admin_ticket_reply', ticketId, adminId: admin._id.toString() });
+    await bot.sendMessage(chatId, `✉️ You are replying to ticket ${ticketId}. Please send your message now.`);
     return;
   }
 
@@ -575,7 +649,7 @@ bot.on("callback_query", async (query) => {
   if (data.startsWith("feedback_") || data.startsWith("return_") || data.startsWith("issue_")) {
     const [type, orderId] = data.split("_");
     const user = await User.findOne({ telegramChatId: String(chatId) });
-    pendingReplies.set(chatId, { type, orderId, userId: user ? user._id.toString() : null });
+    pushPending(chatId, { type, orderId, userId: user ? user._id.toString() : null });
 
     if (type === "feedback") {
       await bot.sendMessage(chatId, "⭐ Send your feedback:");
@@ -655,13 +729,192 @@ bot.on("message", async (msg) => {
   
   const chatId = msg.chat.id;
   const text = msg.text.trim();
-  const state = pendingReplies.get(chatId);
+  const state = getCurrentPending(chatId);
 
   // Handle pending replies (search, feedback, return, issue)
   if (state) {
     if (state.type === "search") {
       await handleProductSearch(chatId, text);
-      pendingReplies.delete(chatId);
+      popPending(chatId);
+      return;
+    }
+
+    // Customer sending a compliment
+    if (state.type === 'compliment') {
+      try {
+        const Ticket = require('../models/ticketModel');
+        const ticketNotifications = require('./ticketNotifications');
+        const user = await User.findOne({ telegramChatId: String(chatId) });
+
+        const ticketIdStr = `CMP-${Date.now()}`;
+        const ticketData = {
+          ticketId: ticketIdStr,
+          userId: user ? user._id : undefined,
+          type: 'USER_QUERY',
+          priority: 'LOW',
+          status: 'OPEN',
+          subject: 'Compliment via Telegram',
+          description: text,
+          category: 'other',
+          messages: [
+            {
+              sender: user ? user._id : undefined,
+              senderRole: 'User',
+              senderName: user ? user.name : 'Telegram User',
+              message: text,
+              timestamp: new Date()
+            }
+          ]
+        };
+
+        // Store telegram chat id so we can notify the user even if they haven't linked their account
+        ticketData.telegramChatId = String(chatId);
+
+        const ticket = await Ticket.create(ticketData);
+
+        // Notify admins about the new compliment ticket
+        try {
+          await ticketNotifications.sendTicketNotification({
+            type: 'TICKET_CREATED',
+            ticket,
+            userName: user ? user.name : 'Telegram User',
+            message: text
+          });
+        } catch (notifyErr) {
+          console.error('Error notifying admins about compliment:', notifyErr.message || notifyErr);
+        }
+
+        await bot.sendMessage(chatId, `💌 Thank you! Your compliment has been submitted (ID: ${ticket.ticketId}). Our team appreciates your feedback.`);
+      } catch (err) {
+        console.error('Compliment handling error:', err);
+        await bot.sendMessage(chatId, 'Sorry, there was an error submitting your compliment. Please try again later.');
+      } finally {
+        popPending(chatId);
+      }
+
+      return;
+    }
+
+    // Admin replying to a ticket
+    if (state.type === 'admin_ticket_reply') {
+      try {
+        const Ticket = require('../models/ticketModel');
+        const ticket = await Ticket.findById(state.ticketId);
+        const admin = await User.findOne({ telegramChatId: String(chatId), role: 'admin' });
+
+        if (!admin) {
+          await bot.sendMessage(chatId, '⚠️ You are not authorized to reply to tickets.');
+          popPending(chatId);
+          return;
+        }
+
+        if (!ticket) {
+          await bot.sendMessage(chatId, 'Ticket not found.');
+          popPending(chatId);
+          return;
+        }
+
+        // Append admin reply to ticket messages (create structure if missing)
+        ticket.messages = ticket.messages || [];
+        ticket.messages.push({
+          from: 'admin',
+          admin: admin._id,
+          text,
+          createdAt: new Date()
+        });
+
+        ticket.status = ticket.status === 'OPEN' ? 'IN_PROGRESS' : ticket.status;
+        ticket.lastUpdated = new Date();
+        await ticket.save();
+
+        // Notify customer via ticketNotifications (this module will send the customer message)
+        try {
+          const ticketNotifications = require('./ticketNotifications');
+          await ticketNotifications.sendTicketNotification({
+            type: 'TICKET_REPLIED_ADMIN',
+            ticket,
+            adminName: admin.name,
+            message: text
+          });
+        } catch (notifyErr) {
+          console.error('Error notifying customer via Telegram:', notifyErr.message || notifyErr);
+        }
+
+        await bot.sendMessage(chatId, `✅ Reply saved and customer notified for ticket ${ticket.ticketId || ticket._id}`);
+      } catch (err) {
+        console.error('Admin ticket reply error:', err);
+        await bot.sendMessage(chatId, 'Error saving reply.');
+      } finally {
+        popPending(chatId);
+      }
+
+      return;
+    }
+
+    // Support ticket subject
+    if (state.type === 'support_subject') {
+      // Save subject and ask for description
+      // pop current subject state, then push the description step
+      popPending(chatId);
+      pushPending(chatId, { type: 'support_description', subject: text });
+      await bot.sendMessage(chatId, 'Please provide detailed description of your issue:', { parse_mode: 'Markdown' });
+      return;
+    }
+
+    // Support ticket description - final step
+    if (state.type === 'support_description') {
+      try {
+        const Ticket = require('../models/ticketModel');
+        const ticketNotifications = require('./ticketNotifications');
+        const user = await User.findOne({ telegramChatId: String(chatId) });
+        const subject = state.subject || 'Support request via Telegram';
+
+        const count = await Ticket.countDocuments();
+        const ticketIdStr = `TKT-${Date.now()}-${count + 1}`;
+
+        const ticketData = {
+          ticketId: ticketIdStr,
+          userId: user ? user._id : undefined,
+          type: 'USER_QUERY',
+          priority: 'MEDIUM',
+          status: 'OPEN',
+          subject,
+          description: text,
+          category: 'other',
+          telegramChatId: String(chatId),
+          messages: [
+            {
+              sender: user ? user._id : undefined,
+              senderRole: 'User',
+              senderName: user ? user.name : 'Telegram User',
+              message: text,
+              timestamp: new Date()
+            }
+          ]
+        };
+
+        const ticket = await Ticket.create(ticketData);
+
+        // Notify admins
+        try {
+          await ticketNotifications.sendTicketNotification({
+            type: 'TICKET_CREATED',
+            ticket,
+            userName: user ? user.name : 'Telegram User',
+            message: text
+          });
+        } catch (notifyErr) {
+          console.error('Error notifying admins about support ticket:', notifyErr.message || notifyErr);
+        }
+
+        await bot.sendMessage(chatId, `✅ Your support ticket has been created (ID: ${ticket.ticketId}). Our support team will review it.`);
+      } catch (err) {
+        console.error('Support ticket creation error:', err);
+        await bot.sendMessage(chatId, 'Sorry, could not create support ticket. Try again later.');
+      } finally {
+        popPending(chatId);
+      }
+
       return;
     }
 
@@ -670,7 +923,7 @@ bot.on("message", async (msg) => {
       const order = await Order.findById(orderId);
       if (!order) {
         await bot.sendMessage(chatId, "Order not found.");
-        pendingReplies.delete(chatId);
+        popPending(chatId);
         return;
       }
 
@@ -692,9 +945,9 @@ bot.on("message", async (msg) => {
       }
     } catch (err) {
       console.error("State handler error:", err);
-      await bot.sendMessage(chatId, "Error processing request.");
+        await bot.sendMessage(chatId, "Error processing request.");
     } finally {
-      pendingReplies.delete(chatId);
+      popPending(chatId);
     }
     return;
   }

@@ -65,20 +65,12 @@ const sendTicketNotification = async ({
         break;
 
       case 'TICKET_REPLIED_ADMIN':
-        // Notify customer if they have telegram connected
+        // Notify customer if they have telegram connected, or if ticket has a telegramChatId stored
         if (ticket.userId) {
           const user = await User.findById(ticket.userId);
           if (user?.telegramChatId) {
-            const customerMessage = `
-✉️ *SUPPORT TEAM REPLIED*
-
-*Ticket:* \`${ticket.ticketId}\`
-*From:* ${adminName || 'Support Team'}
-*Message:* ${message.substring(0, 200)}${message.length > 200 ? '...' : ''}
-
-👉 [View Response](${process.env.FRONTEND_URL}/helpdesk/${ticket._id})
-`;
             try {
+              const customerMessage = `\n✉️ *SUPPORT TEAM REPLIED*\n\n*Ticket:* \`${ticket.ticketId}\`\n*From:* ${adminName || 'Support Team'}\n*Message:* ${message.substring(0, 200)}${message.length > 200 ? '...' : ''}\n\n👉 [View Response](${process.env.FRONTEND_URL}/helpdesk/${ticket._id})\n`;
               await bot.sendMessage(user.telegramChatId, customerMessage, {
                 parse_mode: 'Markdown',
                 disable_web_page_preview: true
@@ -87,6 +79,17 @@ const sendTicketNotification = async ({
             } catch (err) {
               console.error('Error sending customer notification:', err.message);
             }
+          }
+        } else if (ticket.telegramChatId) {
+          try {
+            const customerMessage = `\n✉️ *SUPPORT TEAM REPLIED*\n\n*Ticket:* \`${ticket.ticketId}\`\n*From:* ${adminName || 'Support Team'}\n*Message:* ${message.substring(0, 200)}${message.length > 200 ? '...' : ''}\n\n👉 [View Response](${process.env.FRONTEND_URL}/helpdesk/${ticket._id})\n`;
+            await bot.sendMessage(ticket.telegramChatId, customerMessage, {
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true
+            });
+            console.log(`✅ Telegram notification sent to ticket chatId`);
+          } catch (err) {
+            console.error('Error sending customer notification to telegramChatId:', err.message);
           }
         }
         return true;
@@ -101,20 +104,12 @@ const sendTicketNotification = async ({
 
 👉 [View Details](${process.env.BACKEND_URL}/admin/tickets/${ticket._id})
 `;
-        // Also notify customer
+        // Also notify customer (user-linked or by saved telegramChatId)
         if (ticket.userId) {
           const user = await User.findById(ticket.userId);
           if (user?.telegramChatId) {
-            const customerMessage = `
-✅ *YOUR SUPPORT TICKET IS RESOLVED*
-
-*Ticket:* \`${ticket.ticketId}\`
-*Resolution:* ${resolutionNote || 'Your issue has been resolved'}
-
-Please rate your support experience: 
-👉 [Rate Now](${process.env.FRONTEND_URL}/helpdesk/${ticket._id}/rate)
-`;
             try {
+              const customerMessage = `\n✅ *YOUR SUPPORT TICKET IS RESOLVED*\n\n*Ticket:* \`${ticket.ticketId}\`\n*Resolution:* ${resolutionNote || 'Your issue has been resolved'}\n\nPlease rate your support experience: \n👉 [Rate Now](${process.env.FRONTEND_URL}/helpdesk/${ticket._id}/rate)\n`;
               await bot.sendMessage(user.telegramChatId, customerMessage, {
                 parse_mode: 'Markdown',
                 disable_web_page_preview: true
@@ -122,6 +117,16 @@ Please rate your support experience:
             } catch (err) {
               console.error('Error sending resolution notification:', err.message);
             }
+          }
+        } else if (ticket.telegramChatId) {
+          try {
+            const customerMessage = `\n✅ *YOUR SUPPORT TICKET IS RESOLVED*\n\n*Ticket:* \`${ticket.ticketId}\`\n*Resolution:* ${resolutionNote || 'Your issue has been resolved'}\n\nPlease rate your support experience: \n👉 [Rate Now](${process.env.FRONTEND_URL}/helpdesk/${ticket._id}/rate)\n`;
+            await bot.sendMessage(ticket.telegramChatId, customerMessage, {
+              parse_mode: 'Markdown',
+              disable_web_page_preview: true
+            });
+          } catch (err) {
+            console.error('Error sending resolution notification to telegramChatId:', err.message);
           }
         }
         break;

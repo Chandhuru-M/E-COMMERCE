@@ -149,6 +149,12 @@ const ticketSchema = new mongoose.Schema({
   // Additional tracking
   tags: [String],
   isEscalated: { type: Boolean, default: false }
+  ,
+  // Telegram linkage (optional) - store chat id to notify users who created tickets via Telegram
+  telegramChatId: {
+    type: String,
+    sparse: true
+  }
 });
 
 // Indexes for better query performance
