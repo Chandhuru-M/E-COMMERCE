@@ -1,62 +1,88 @@
+/* ------------------------------------------------------
+   FLOATING CHAT BUTTON
+-------------------------------------------------------*/
 .chat-float-btn {
   position: fixed;
   right: 20px;
   bottom: 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #800000 0%, #C48A6A 100%); /* Maroon -> Sandal */
   color: white;
   padding: 15px;
   border-radius: 50%;
   border: none;
   cursor: pointer;
   font-size: 24px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 12px rgba(128, 0, 0, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.25s ease;
   z-index: 1000;
 }
 
 .chat-float-btn:hover {
-  transform: scale(1.1);
-  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+  transform: scale(1.08);
+  box-shadow: 0 6px 16px rgba(128, 0, 0, 0.55);
 }
 
+/* Optional: hidden state for smooth close */
+.chat-float-btn.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------
+   CHAT WINDOW CONTAINER
+-------------------------------------------------------*/
 .chat-window {
   position: fixed;
   right: 20px;
   bottom: 90px;
   width: 380px;
   height: 520px;
-  background: white;
+  background: #ffffff;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
   display: flex;
   flex-direction: column;
   z-index: 1000;
   animation: slideIn 0.3s ease-out;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  /* For draggable hints: cursor on header, but actual drag via JS */
 }
 
+/* Smooth close / hide state */
+.chat-window.hidden {
+  opacity: 0;
+  transform: translateY(15px) scale(0.98);
+  pointer-events: none;
+}
+
+/* Slide-in animation on first mount */
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(20px) scale(0.96);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
+/* ------------------------------------------------------
+   CHAT HEADER
+-------------------------------------------------------*/
 .chat-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #800000 0%, #C48A6A 100%); /* Maroon -> Sandal */
   color: white;
-  padding: 15px;
+  padding: 12px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-radius: 16px 16px 0 0;
+  cursor: move; /* visual cue – actual dragging via JS */
 }
 
 .chat-header strong {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .chat-header button {
@@ -76,17 +102,20 @@
   background: rgba(255, 255, 255, 0.2);
 }
 
+/* ------------------------------------------------------
+   CHAT BODY
+-------------------------------------------------------*/
 .chat-body {
   flex: 1;
   overflow-y: auto;
   padding: 15px;
-  background: #f8f9fa;
+  background: #F5E2C8; /* Light Sandal */
 }
 
 .chat-welcome {
   text-align: center;
   padding: 20px;
-  color: #666;
+  color: #6b6b6b;
 }
 
 .chat-welcome p {
@@ -105,15 +134,20 @@
   margin: 8px 0;
   border-radius: 8px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, transform 0.15s;
   font-size: 14px;
-  color: #667eea;
+  color: #800000;
+  border: 1px solid #e6d5c4;
 }
 
 .chat-welcome li:hover {
-  background: #f0f0ff;
+  background: #f6e5d2;
+  transform: translateY(-1px);
 }
 
+/* ------------------------------------------------------
+   CHAT MESSAGES
+-------------------------------------------------------*/
 .chat-message {
   max-width: 75%;
   padding: 10px 14px;
@@ -137,20 +171,24 @@
   }
 }
 
+/* User messages */
 .chat-message.user {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #800000 0%, #C48A6A 100%);
   color: white;
   margin-left: auto;
   border-bottom-right-radius: 4px;
 }
 
+/* Bot messages */
 .chat-message.bot {
   background: white;
   color: #333;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(128, 0, 0, 0.15);
   border-bottom-left-radius: 4px;
+  border: 1px solid #f0d9c2;
 }
 
+/* Typing indicator */
 .typing-indicator {
   display: inline-block;
   animation: pulse 1.5s infinite;
@@ -161,6 +199,9 @@
   50% { opacity: 1; }
 }
 
+/* ------------------------------------------------------
+   PRODUCT CARDS INSIDE CHAT
+-------------------------------------------------------*/
 .product-cards {
   display: flex;
   flex-direction: column;
@@ -177,14 +218,14 @@
   gap: 12px;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(128, 0, 0, 0.15);
   border: 2px solid transparent;
 }
 
 .product-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
-  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(128, 0, 0, 0.3);
+  border-color: #800000;
 }
 
 .product-card img {
@@ -209,15 +250,18 @@
 .product-card p {
   margin: 0;
   font-weight: bold;
-  color: #667eea;
+  color: #800000;
   font-size: 14px;
 }
 
+/* ------------------------------------------------------
+   CHAT FOOTER
+-------------------------------------------------------*/
 .chat-footer {
   display: flex;
   padding: 12px;
   background: white;
-  border-top: 1px solid #e0e0e0;
+  border-top: 1px solid #e6d5c4;
   border-radius: 0 0 16px 16px;
   gap: 8px;
 }
@@ -226,14 +270,15 @@
   flex: 1;
   padding: 10px 12px;
   border-radius: 20px;
-  border: 1px solid #ddd;
+  border: 1px solid #d8b89a;
   font-size: 14px;
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .chat-footer input:focus {
-  border-color: #667eea;
+  border-color: #800000;
+  box-shadow: 0 0 0 2px rgba(128, 0, 0, 0.15);
 }
 
 .chat-footer input:disabled {
@@ -243,19 +288,19 @@
 
 .chat-footer button {
   padding: 10px 20px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #800000 0%, #C48A6A 100%);
   color: white;
   border: none;
   border-radius: 20px;
   cursor: pointer;
   font-weight: 600;
   font-size: 14px;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
 }
 
 .chat-footer button:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 8px rgba(128, 0, 0, 0.3);
 }
 
 .chat-footer button:disabled {
@@ -263,25 +308,29 @@
   cursor: not-allowed;
 }
 
-/* Scrollbar styling */
+/* ------------------------------------------------------
+   SCROLLBAR (CHAT BODY)
+-------------------------------------------------------*/
 .chat-body::-webkit-scrollbar {
   width: 6px;
 }
 
 .chat-body::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #f2e0c8;
 }
 
 .chat-body::-webkit-scrollbar-thumb {
-  background: #667eea;
+  background: #c48a6a;
   border-radius: 3px;
 }
 
 .chat-body::-webkit-scrollbar-thumb:hover {
-  background: #5568d3;
+  background: #a66d50;
 }
 
-/* Responsive adjustments */
+/* ------------------------------------------------------
+   RESPONSIVE ADJUSTMENTS
+-------------------------------------------------------*/
 @media (max-width: 480px) {
   .chat-window {
     right: 10px;
@@ -294,4 +343,83 @@
     right: 15px;
     bottom: 15px;
   }
+}
+/* ------------------------------------------------------
+   DARK MODE (toggle by adding .dark-mode to body or wrapper)
+-------------------------------------------------------*/
+.dark-mode .chat-window {
+  background: #191314;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+}
+
+.dark-mode .chat-header {
+  background: linear-gradient(135deg, #4e0000 0%, #a76a4c 100%);
+}
+
+.dark-mode .chat-body {
+  background: #23181b;
+}
+
+.dark-mode .chat-message.bot {
+  background: #2c1f22;
+  color: #f5e2c8;
+  border-color: #4a2b2f;
+}
+
+.dark-mode .chat-message.user {
+  background: linear-gradient(135deg, #b63b3b 0%, #c48a6a 100%);
+}
+
+.dark-mode .chat-welcome {
+  color: #d0c2be;
+}
+
+.dark-mode .chat-welcome li {
+  background: #2c1f22;
+  border-color: #4a2b2f;
+  color: #f5e2c8;
+}
+
+.dark-mode .chat-welcome li:hover {
+  background: #3a262b;
+}
+
+.dark-mode .product-card {
+  background: #2c1f22;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.dark-mode .product-card h4 {
+  color: #f5e2c8;
+}
+
+.dark-mode .product-card p {
+  color: #f7c89b;
+}
+
+.dark-mode .chat-footer {
+  background: #1f1518;
+  border-top-color: #3a262b;
+}
+
+.dark-mode .chat-footer input {
+  background: #2c1f22;
+  border-color: #4a2b2f;
+  color: #f5e2c8;
+}
+
+.dark-mode .chat-footer input::placeholder {
+  color: #a58f8a;
+}
+
+.dark-mode .chat-footer button {
+  background: linear-gradient(135deg, #b63b3b 0%, #c48a6a 100%);
+}
+
+.dark-mode .chat-body::-webkit-scrollbar-track {
+  background: #2c1f22;
+}
+
+.dark-mode .chat-body::-webkit-scrollbar-thumb {
+  background: #b06348;
 }
