@@ -12,7 +12,7 @@ const logger = console;
  * Returns parsed intent + recommended items (if intent is search)
  */
 exports.parseAndSearch = catchAsyncError(async (req, res) => {
-  const { message, page = 1, limit = 8 } = req.body;
+  const { message, page = 1, limit = 8, cartItems = [] } = req.body;
   if (!message) return res.status(400).json({ success: false, message: "message required" });
 
   const user = req.user;
@@ -24,7 +24,33 @@ exports.parseAndSearch = catchAsyncError(async (req, res) => {
   }
 
   // Use the Gemini-powered ChatAssistantAgent
-  const sessionContext = { user, cart: [] }; // Add cart if needed
+  // Use the cart items passed from frontend if available, otherwise try DB
+  let userCart = [];
+  
+  if (cartItems && cartItems.length > 0) {
+      // Use frontend cart
+      userCart = cartItems.map(item => ({
+          product: item.name,
+          quantity: item.quantity,
+          price: item.price
+      }));
+  } else if (user) {
+      try {
+          const Cart = require("../models/cartModel");
+          const cart = await Cart.findOne({ user: user._id });
+          if (cart && cart.cartItems) {
+              userCart = cart.cartItems.map(item => ({
+                  product: item.name,
+                  quantity: item.quantity,
+                  price: item.price
+              }));
+          }
+      } catch (e) {
+          console.error("Error fetching cart for context:", e);
+      }
+  }
+
+  const sessionContext = { user, cart: userCart }; 
   
   console.log("Processing message:", message);
 

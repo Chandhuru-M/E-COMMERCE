@@ -87,6 +87,14 @@ const tools = [
           },
           required: ["productName"]
         }
+      },
+      {
+        name: "get_cart_items",
+        description: "Get the list of items currently in the user's shopping cart.",
+        parameters: {
+          type: "OBJECT",
+          properties: {}
+        }
       }
     ]
   }
@@ -119,6 +127,17 @@ const executeTool = async (functionName, args, session) => {
         // For now, we push to the session cart as per existing logic.
         session.cart.push({ product: args.productName, quantity: args.quantity || 1 });
         return { success: true, message: `Added ${args.productName} to your cart.`, current_cart_size: session.cart.length };
+
+      case "get_cart_items":
+        // If the session cart is empty, it might be because we haven't synced with the real DB cart yet
+        // The controller now passes the DB cart in session.cart
+        if (!session.cart || session.cart.length === 0) {
+          return { message: "Your cart is currently empty." };
+        }
+        return { 
+          message: "Here are the items in your cart:", 
+          items: session.cart.map(item => `${item.product} (x${item.quantity || 1}) - $${item.price || '?'}`) 
+        };
 
       default:
         return { error: "Function not found" };
