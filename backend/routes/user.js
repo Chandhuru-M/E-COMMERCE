@@ -22,9 +22,10 @@ router.route("/lookup").get(isAuthenticatedUser, authorizeRoles('admin', 'mercha
 router.route("/telegram/clear-cart").put(isAuthenticatedUser, async (req, res) => {
     try {
         const user = await require('../models/userModel').findById(req.user.id);
+        console.log(`[SYNC] clear-cart called for user: ${user ? user._id : 'unknown'}`);
         user.telegramCart = [];
         await user.save();
-        res.json({ success: true });
+        return res.json({ success: true, telegramCart: user.telegramCart });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
@@ -35,15 +36,17 @@ router.route("/telegram/sync-cart").put(isAuthenticatedUser, async (req, res) =>
     try {
         const user = await require('../models/userModel').findById(req.user.id);
         const { items } = req.body; // items from website cart
-        
-        user.telegramCart = items.map(item => ({
+
+        console.log(`[SYNC] sync-cart called for user: ${user ? user._id : 'unknown'}, items: ${items ? items.length : 0}`);
+
+        user.telegramCart = (items || []).map(item => ({
             product: item.product,
             name: item.name,
             price: item.price,
             quantity: item.quantity
         }));
         await user.save();
-        res.json({ success: true });
+        return res.json({ success: true, telegramCart: user.telegramCart });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }

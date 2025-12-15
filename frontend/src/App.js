@@ -12,6 +12,7 @@ import ProductSearch from './components/product/ProductSearch';
 import Login from './components/user/Login';
 import Register from './components/user/Register';
 import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import store from './store';
 import { loadUser } from './actions/userActions';
 import Profile from './components/user/Profile';
@@ -70,6 +71,72 @@ function App() {
     }
     getStripeApiKey()
   },[])
+
+  // Sync website cart to Telegram whenever cart items change
+  const cartState = store.getState().cartState;
+  const authState = store.getState().authState;
+
+  useEffect(() => {
+    let timer = null;
+    const sync = async () => {
+      try {
+        const items = cartState.items || [];
+        const user = authState.user;
+        if (!user || !user._id) return;
+        if (!items || items.length === 0) return;
+        console.log('[SYNC] App-level: syncing cart to Telegram, items:', items.length);
+        const res = await axios.put('/api/v1/telegram/sync-cart', { items });
+        console.log('[SYNC] server response:', res.data);
+      } catch (err) {
+        console.error('[SYNC] Error syncing cart to Telegram:', err?.response?.data || err.message || err);
+      }
+    };
+
+    // Debounce updates to avoid too many requests during rapid cart changes
+    timer = setTimeout(sync, 500);
+    return () => clearTimeout(timer);
+  }, [/* intentionally empty - we will subscribe below */]);
+
+  // Subscribe to store changes to trigger sync effect when cart or auth changes
+  useEffect(() => {
+    let prevState = store.getState();
+    const unsubscribe = store.subscribe(() => {
+      const nextState = store.getState();
+      const prevCartItems = prevState.cartState.items || [];
+      const nextCartItems = nextState.cartState.items || [];
+      const prevUserId = prevState.authState.user?._id;
+      const nextUserId = nextState.authState.user?._id;
+
+      const cartChanged = JSON.stringify(prevCartItems) !== JSON.stringify(nextCartItems);
+      const userChanged = prevUserId !== nextUserId;
+
+      if (cartChanged || userChanged) {
+        (async () => {
+          try {
+            const items = nextCartItems;
+            const user = nextState.authState.user;
+            if (!user || !user._id) {
+              prevState = nextState;
+              return;
+            }
+            if (!items || items.length === 0) {
+              // Do not overwrite Telegram cart with empty website cart — skip sync
+              console.log('[SYNC] store.subscribe: items empty — skip syncing to Telegram to avoid overwriting');
+              prevState = nextState;
+              return;
+            }
+            console.log('[SYNC] store.subscribe: syncing cart to Telegram, items:', items.length);
+            const res = await axios.put('/api/v1/telegram/sync-cart', { items });
+            console.log('[SYNC] server response:', res.data);
+          } catch (err) {
+            console.error('[SYNC] Error syncing cart to Telegram (subscribe):', err?.response?.data || err.message || err);
+          }
+          prevState = nextState;
+        })();
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   return (
     <Router>

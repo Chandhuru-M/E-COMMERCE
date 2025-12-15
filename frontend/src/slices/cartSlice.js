@@ -22,11 +22,15 @@ const cartSlice = createSlice({
             const isItemExist = state.items.find( i => i.product == item.product);
             
             if(isItemExist) {
-                state = {
-                    ...state,
-                    loading: false,
-                }
-            }else{
+                // Merge quantities if item already exists
+                state.items = state.items.map(i => {
+                    if (i.product == item.product) {
+                        return { ...i, quantity: (Number(i.quantity) || 0) + (Number(item.quantity) || 0) };
+                    }
+                    return i;
+                });
+                state.loading = false;
+            } else {
                 state = {
                     items: [...state.items, item],
                     loading: false

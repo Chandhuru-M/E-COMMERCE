@@ -24,7 +24,7 @@ export const validateShipping = (shippingInfo, navigate) => {
 
 
 export default function Shipping() {
-    const {shippingInfo={} } = useSelector(state => state.cartState)
+    const {shippingInfo={}, items } = useSelector(state => state.cartState)
     const {user} = useSelector(state => state.authState)
 
     const [address, setAddress] = useState(shippingInfo.address || '');
@@ -38,29 +38,33 @@ export default function Shipping() {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
-    // Load Telegram cart if coming from Telegram
+    // Load Telegram cart whenever entering shipping page
     useEffect(() => {
-        const source = searchParams.get('source');
-        const userId = searchParams.get('userId');
-        
-        if (source === 'telegram' && userId && user && user._id === userId) {
-            loadTelegramCart();
-        }
-    }, [searchParams, user]);
+        loadTelegramCart();
+    }, [user]);
 
     const loadTelegramCart = async () => {
         try {
             const { data } = await axios.get('/api/v1/me', { withCredentials: true });
             const telegramCart = data.user.telegramCart || [];
             
-            console.log('Loading Telegram cart to website:', telegramCart);
+            console.log('📱 Telegram cart items from database:', telegramCart);
             
             if (telegramCart.length > 0) {
+                // Check if cart already has items - don't duplicate
+                if (items && items.length > 0) {
+                    console.log('ℹ️ Cart already has items, skipping telegram load');
+                    return;
+                }
+                
+                console.log('📥 Loading items from Telegram cart...');
                 // Fetch full product details for each item
                 for (const item of telegramCart) {
                     try {
                         const { data: productData } = await axios.get(`/api/v1/product/${item.product}`);
                         const product = productData.product;
+                        
+                        console.log(`✅ Adding ${product.name} to cart (qty: ${item.quantity})`);
                         
                         // Add to Redux cart with full product details
                         dispatch(addCartItemSuccess({
@@ -72,14 +76,14 @@ export default function Shipping() {
                             quantity: item.quantity
                         }));
                     } catch (err) {
-                        console.error(`Error loading product ${item.product}:`, err);
+                        console.error(`❌ Error loading product ${item.product}:`, err);
                     }
                 }
                 
-                toast.success('Cart loaded from Telegram! ✅', {position: toast.POSITION.BOTTOM_CENTER});
+                console.log('✅ Cart loaded from Telegram!');
             }
         } catch (error) {
-            console.error('Error loading Telegram cart:', error);
+            console.error('❌ Error loading Telegram cart:', error);
         }
     };
 

@@ -1,4 +1,10 @@
 // telegram/telegramBot.js
+// Provide default exports early to avoid circular dependency warnings
+module.exports = module.exports || {};
+module.exports.bot = null;
+module.exports.sendOrderUpdateToUser = async () => false;
+module.exports.notifyOrderStatusChanged = async () => false;
+module.exports.buildOrderInlineKeyboard = (orderId) => ({});
 const TelegramBot = require("node-telegram-bot-api");
 const User = require("../models/userModel");
 const Order = require("../models/orderModel");
@@ -19,8 +25,36 @@ if (!token) {
   return;
 }
 
-const bot = new TelegramBot(token, { polling: true });
-console.log("BOT LOADED");
+// Export a placeholder early to reduce circular dependency warnings
+module.exports = module.exports || {};
+
+// Prevent multiple instances of the bot
+let bot = null;
+
+// Check if bot is already running (global instance)
+if (global.telegramBot) {
+  console.log("⚠️ Using existing bot instance (preventing duplicate polling)");
+  bot = global.telegramBot;
+  module.exports.bot = bot;
+} else {
+  // Create new bot instance only once
+  bot = new TelegramBot(token, { polling: { interval: 300, allowedUpdates: ['message', 'callback_query'] } });
+  global.telegramBot = bot;
+  module.exports.bot = bot;
+  
+  // Add error handling for polling
+  bot.on('polling_error', (err) => {
+    if (err.code === 'ETELEGRAM' && err.message.includes('409')) {
+      console.error('❌ [POLLING_ERROR] 409 Conflict - Multiple bot instances detected!');
+      console.error('    Make sure to stop any other running instances of this bot');
+      console.error('    Error:', err.message);
+    } else {
+      console.error('❌ [POLLING_ERROR]', err.message);
+    }
+  });
+  
+  console.log("✅ BOT LOADED - Polling active");
+}
 
 // In-memory state
 const pendingReplies = new Map();
@@ -365,39 +399,63 @@ bot.onText(/\/start(?:\s+(.+))?/, async (msg, match) => {
   const chatId = msg.chat.id;
   const payload = match && match[1] ? match[1].trim() : null;
 
-  console.log("START PAYLOAD:", payload);
+  console.log(`📱 [START] ChatId: ${chatId}, Payload: ${payload}`);
 
   if (!payload || payload === "undefined" || payload.length < 6) {
+    console.log("⚠️ Invalid or missing payload");
     await bot.sendMessage(chatId, "⚠️ Please click *Connect Telegram* from the website while logged in.", { parse_mode: "Markdown" });
     await bot.sendMessage(chatId, "Main menu:", mainMenuKeyboard());
     return;
   }
 
   try {
-    const user = await User.findById(payload);
-    if (!user) {
-      console.log("User not found:", payload);
-      await bot.sendMessage(chatId, `❌ User not found. Please log in and click 'Connect Telegram'.\n\nID: ${payload}`);
+    // Validate if payload is a valid MongoDB ObjectId format
+    if (!/^[0-9a-fA-F]{24}$/.test(payload)) {
+      console.log(`❌ Invalid userId format: ${payload}`);
+      await bot.sendMessage(chatId, `❌ Invalid user ID format: ${payload}\n\nPlease use the 'Connect Telegram' button from the website.`);
       return;
     }
 
-    // Clear this chatId from any other users first to ensure only one user has it
-    await User.updateMany(
+    const user = await User.findById(payload);
+    
+    if (!user) {
+      console.log(`❌ User not found in database - ID: ${payload}`);
+      console.log(`   Searching for any users to verify database connection...`);
+      const userCount = await User.countDocuments();
+      console.log(`   Total users in database: ${userCount}`);
+      
+      await bot.sendMessage(chatId, 
+        `❌ User not found. The ID doesn't match any account in our system.\n\n` +
+        `ID: ${payload}\n\n` +
+        `Solutions:\n` +
+        `1. Make sure you're logged in on the website\n` +
+        `2. Click 'Connect Telegram' from your profile\n` +
+        `3. Try again with the new link`, 
+        mainMenuKeyboard()
+      );
+      return;
+    }
+
+    // Clear this chatId from any other users first to ensure 1-to-1 mapping
+    const clearedCount = await User.updateMany(
       { telegramChatId: String(chatId), _id: { $ne: user._id } },
       { $unset: { telegramChatId: "" } }
     );
-    console.log(`🧹 Cleared chatId ${chatId} from other users`);
+    if (clearedCount.modifiedCount > 0) {
+      console.log(`🧹 Cleared chatId ${chatId} from ${clearedCount.modifiedCount} other user(s)`);
+    }
 
-    // Store as string to ensure consistency
+    // Store chatId as string for consistency
     user.telegramChatId = String(chatId);
     await user.save();
-    console.log(`✅ Saved telegramChatId: ${user.telegramChatId} for user: ${user.name}`);
-
-    await bot.sendMessage(chatId, `✅ Connected! Welcome ${user.name}!`);
+    
+    console.log(`✅ [CONNECTED] ChatId: ${chatId} -> User: ${user.name} (${user._id})`);
+    
+    await bot.sendMessage(chatId, `✅ Connected! Welcome *${user.name}*!`, { parse_mode: "Markdown" });
     await bot.sendMessage(chatId, "Main menu:", mainMenuKeyboard());
-    console.log(`✅ Linked: ${chatId} -> ${user._id} (${user.name})`);
+    
   } catch (err) {
-    console.error("Start error:", err);
+    console.error("❌ Start command error:", err);
     await bot.sendMessage(chatId, `❌ Error: ${err.message}`);
   }
 });
@@ -454,8 +512,21 @@ bot.on("callback_query", async (query) => {
 
   if (data === "menu_show_orders") {
     const user = await User.findOne({ telegramChatId: String(chatId) });
-    console.log(`[ORDERS] ChatId: ${chatId}, User: ${user ? `${user.name} (${user._id})` : 'NONE'}`);
-    if (!user) return bot.sendMessage(chatId, "⚠️ You are not connected to an account. Click Connect Telegram from the website.");
+    console.log(`[ORDERS] ChatId: ${chatId}, User: ${user ? `${user.name} (${user._id})` : 'NOT FOUND'}`);
+    
+    if (!user) {
+      console.log(`⚠️ User not found for chatId ${chatId}`);
+      console.log(`   Connection status: Check if /start was completed`);
+      return bot.sendMessage(chatId, 
+        "⚠️ You are not connected to an account.\n\n" +
+        "Please:\n" +
+        "1. Go to the website\n" +
+        "2. Log in to your account\n" +
+        "3. Click 'Connect Telegram' button\n" +
+        "4. Follow the link to confirm",
+        mainMenuKeyboard()
+      );
+    }
 
     const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(5);
     console.log(`[ORDERS] Found ${orders.length} orders for user ${user._id}`);
@@ -704,3 +775,35 @@ module.exports = {
   notifyOrderStatusChanged,
   buildOrderInlineKeyboard
 };
+
+// ============================================
+// GRACEFUL SHUTDOWN HANDLERS
+// ============================================
+
+// Handle SIGTERM (process termination)
+process.on('SIGTERM', async () => {
+  console.log('📋 SIGTERM received - shutting down gracefully...');
+  if (bot) {
+    try {
+      await bot.stopPolling();
+      console.log('✅ Bot polling stopped');
+    } catch (err) {
+      console.error('Error stopping bot:', err.message);
+    }
+  }
+  process.exit(0);
+});
+
+// Handle SIGINT (Ctrl+C)
+process.on('SIGINT', async () => {
+  console.log('📋 SIGINT received - shutting down gracefully...');
+  if (bot) {
+    try {
+      await bot.stopPolling();
+      console.log('✅ Bot polling stopped');
+    } catch (err) {
+      console.error('Error stopping bot:', err.message);
+    }
+  }
+  process.exit(0);
+});
