@@ -39,103 +39,174 @@ export default function Dashboard () {
 
 
     return (
-        <div className="row">
-            <div className="col-12 col-md-2">
+        <div className="row m-0">
+            <div className="col-12 col-md-auto p-0">
                     <Sidebar/>
             </div>
-            <div className="col-12 col-md-10">
-                <h1 className="my-4">Dashboard</h1>
-                <div className="row pr-4">
-                    <div className="col-xl-12 col-sm-12 mb-3">
-                        <div className="card text-white bg-primary o-hidden h-100">
-                            <div className="card-body">
-                                <div className="text-center card-font-size">Total Amount<br /> <b>${totalAmount}</b>
+            <div className="col-12 col-md">
+                <div className="dashboard-content container-fluid px-4">
+                    <h1 className="my-4 dashboard-title">Dashboard Overview</h1>
+                    
+                    <div className="row mb-4">
+                        <div className="col-xl-3 col-md-6 mb-4">
+                            <div className="card dashboard-card h-100 border-left-primary shadow py-2">
+                                <div className="card-body">
+                                    <div className="row no-gutters align-items-center">
+                                        <div className="col mr-2">
+                                            <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                                Total Revenue</div>
+                                            <div className="h5 mb-0 font-weight-bold text-gray-800">${totalAmount.toFixed(2)}</div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <i className="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="col-xl-3 col-md-6 mb-4">
+                            <div className="card dashboard-card h-100 border-left-success shadow py-2">
+                                <div className="card-body">
+                                    <div className="row no-gutters align-items-center">
+                                        <div className="col mr-2">
+                                            <div className="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                                Products</div>
+                                            <div className="h5 mb-0 font-weight-bold text-gray-800">{products.length}</div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <i className="fas fa-box fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <Link to="/admin/products" className="stretched-link"></Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="col-xl-3 col-md-6 mb-4">
+                            <div className="card dashboard-card h-100 border-left-info shadow py-2">
+                                <div className="card-body">
+                                    <div className="row no-gutters align-items-center">
+                                        <div className="col mr-2">
+                                            <div className="text-xs font-weight-bold text-info text-uppercase mb-1">Orders</div>
+                                            <div className="h5 mb-0 font-weight-bold text-gray-800">{adminOrders.length}</div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <i className="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <Link to="/admin/orders" className="stretched-link"></Link>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="col-xl-3 col-md-6 mb-4">
+                            <div className="card dashboard-card h-100 border-left-warning shadow py-2">
+                                <div className="card-body">
+                                    <div className="row no-gutters align-items-center">
+                                        <div className="col mr-2">
+                                            <div className="text-xs font-weight-bold text-warning text-uppercase mb-1">Users</div>
+                                            <div className="h5 mb-0 font-weight-bold text-gray-800">{users.length}</div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <i className="fas fa-users fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <Link to="/admin/users" className="stretched-link"></Link>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="row pr-4">
-                    <div className="col-xl-3 col-sm-6 mb-3">
-                        <div className="card text-white bg-success o-hidden h-100">
-                            <div className="card-body">
-                                <div className="text-center card-font-size">Products<br /> <b>{products.length}</b></div>
+
+                    <div className="row mb-4">
+                        <div className="col-xl-3 col-md-6 mb-4">
+                            <div className="card dashboard-card h-100 border-left-danger shadow py-2">
+                                <div className="card-body">
+                                    <div className="row no-gutters align-items-center">
+                                        <div className="col mr-2">
+                                            <div className="text-xs font-weight-bold text-danger text-uppercase mb-1">Out of Stock</div>
+                                            <div className="h5 mb-0 font-weight-bold text-gray-800">{outOfStock}</div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <i className="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <Link className="card-footer text-white clearfix small z-1" to="/admin/products">
-                                <span className="float-left">View Details</span>
-                                <span className="float-right">
-                                    <i className="fa fa-angle-right"></i>
-                                </span>
-                            </Link>
                         </div>
-                    </div>
 
-
-                    <div className="col-xl-3 col-sm-6 mb-3">
-                        <div className="card text-white bg-danger o-hidden h-100">
-                            <div className="card-body">
-                                <div className="text-center card-font-size">Orders<br /> <b>{adminOrders.length}</b></div>
+                        <div className="col-xl-3 col-md-6 mb-4">
+                            <div className="card dashboard-card h-100 border-left-dark shadow py-2">
+                                <div className="card-body">
+                                    <div className="row no-gutters align-items-center">
+                                        <div className="col mr-2">
+                                            <div className="text-xs font-weight-bold text-dark text-uppercase mb-1">POS System</div>
+                                            <div className="h5 mb-0 font-weight-bold text-gray-800">Barcode Scanner</div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <i className="fas fa-barcode fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <Link to="/pos" className="stretched-link"></Link>
+                                </div>
                             </div>
-                            <Link className="card-footer text-white clearfix small z-1" to="/admin/orders">
-                                <span className="float-left">View Details</span>
-                                <span className="float-right">
-                                    <i className="fa fa-angle-right"></i>
-                                </span>
-                            </Link>
                         </div>
-                    </div>
 
-
-                    <div className="col-xl-3 col-sm-6 mb-3">
-                        <div className="card text-white bg-info o-hidden h-100">
-                            <div className="card-body">
-                                <div className="text-center card-font-size">Users<br /> <b>{users.length}</b></div>
-                            </div>
-                            <Link className="card-footer text-white clearfix small z-1" to="/admin/users">
-                                <span className="float-left">View Details</span>
-                                <span className="float-right">
-                                    <i className="fa fa-angle-right"></i>
-                                </span>
-                            </Link>
-                        </div>
-                    </div>
-
-
-                    <div className="col-xl-3 col-sm-6 mb-3">
-                        <div className="card text-white bg-warning o-hidden h-100">
-                            <div className="card-body">
-                                <div className="text-center card-font-size">Out of Stock<br /> <b>{outOfStock}</b></div>
+                        <div className="col-xl-3 col-md-6 mb-4">
+                            <div className="card dashboard-card h-100 border-left-secondary shadow py-2">
+                                <div className="card-body">
+                                    <div className="row no-gutters align-items-center">
+                                        <div className="col mr-2">
+                                            <div className="text-xs font-weight-bold text-secondary text-uppercase mb-1">Support</div>
+                                            <div className="h5 mb-0 font-weight-bold text-gray-800">Help Desk</div>
+                                        </div>
+                                        <div className="col-auto">
+                                            <i className="fas fa-headset fa-2x text-gray-300"></i>
+                                        </div>
+                                    </div>
+                                    <Link to="/admin/support" className="stretched-link"></Link>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div className="col-xl-3 col-sm-6 mb-3">
-                        <div className="card text-white bg-dark o-hidden h-100">
-                            <div className="card-body">
-                                <div className="text-center card-font-size"><i className="fa fa-barcode"></i> POS System<br /> <b>Barcode Scanner</b></div>
+                    <div className="row">
+                        <div className="col-xl-8 col-lg-7">
+                            <div className="card shadow mb-4">
+                                <div className="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 className="m-0 font-weight-bold text-primary">Earnings Overview</h6>
+                                </div>
+                                <div className="card-body">
+                                    <div className="chart-area d-flex justify-content-center align-items-center" style={{height: '300px', background: '#f8f9fc'}}>
+                                        <p className="text-muted">Chart Visualization Placeholder</p>
+                                    </div>
+                                </div>
                             </div>
-                            <Link className="card-footer text-white clearfix small z-1" to="/pos">
-                                <span className="float-left">Open POS</span>
-                                <span className="float-right">
-                                    <i className="fa fa-angle-right"></i>
-                                </span>
-                            </Link>
+                        </div>
+
+                        <div className="col-xl-4 col-lg-5">
+                            <div className="card shadow mb-4">
+                                <div className="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                                    <h6 className="m-0 font-weight-bold text-primary">Stock Status</h6>
+                                </div>
+                                <div className="card-body">
+                                    <div className="mb-3">
+                                        <h4 className="small font-weight-bold">In Stock <span className="float-right">{products.length - outOfStock}</span></h4>
+                                        <div className="progress mb-4">
+                                            <div className="progress-bar bg-success" role="progressbar" style={{width: `${((products.length - outOfStock)/products.length)*100}%`}} aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                    <div className="mb-3">
+                                        <h4 className="small font-weight-bold">Out of Stock <span className="float-right">{outOfStock}</span></h4>
+                                        <div className="progress mb-4">
+                                            <div className="progress-bar bg-danger" role="progressbar" style={{width: `${(outOfStock/products.length)*100}%`}} aria-valuenow="20" aria-valuemin="0" aria-valuemax="100"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div className="col-xl-3 col-sm-6 mb-3">
-                        <div className="card text-white bg-secondary o-hidden h-100">
-                            <div className="card-body">
-                                <div className="text-center card-font-size"><i className="fa fa-headset"></i> Support System<br /> <b>Help Desk</b></div>
-                            </div>
-                            <Link className="card-footer text-white clearfix small z-1" to="/admin/support">
-                                <span className="float-left">Manage Tickets</span>
-                                <span className="float-right">
-                                    <i className="fa fa-angle-right"></i>
-                                </span>
-                            </Link>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

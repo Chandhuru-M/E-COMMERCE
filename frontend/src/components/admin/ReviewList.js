@@ -98,11 +98,11 @@ export default function ReviewList() {
 
 
     return (
-        <div className="row">
-        <div className="col-12 col-md-2">
+        <div className="row m-0">
+        <div className="col-12 col-md-auto p-0">
                 <Sidebar/>
         </div>
-        <div className="col-12 col-md-10">
+        <div className="col-12 col-md">
             <h1 className="my-4">Review List</h1>
             <div className="row justify-content-center mt-5">
                 <div className="col-5">

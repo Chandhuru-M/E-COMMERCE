@@ -107,37 +107,45 @@ export default function Cart() {
                         <div className="col-12 col-lg-8">
                             {items.map(item => (
                                 <Fragment key={item.product}>
-                                    <hr />
                                     <div className="cart-item">
                                         <div className="row">
                                             <div className="col-4 col-lg-3">
-                                                <img src={item.image} alt={item.name} height="90" width="115"/>
+                                                <img src={item.image} alt={item.name} className="cart-item-img" />
                                             </div>
 
-                                            <div className="col-5 col-lg-3">
-                                                <Link to={`/product/${item.product}`}>{item.name}</Link>
-                                            </div>
+                                            <div className="col-8 col-lg-9">
+                                                <div className="d-flex justify-content-between align-items-start">
+                                                    <div className="cart-item-info">
+                                                        <Link to={`/product/${item.product}`} className="cart-item-name">{item.name}</Link>
+                                                        <p className={item.stock > 0 ? "cart-item-stock" : "cart-item-stock text-danger"}>
+                                                            {item.stock > 0 ? "In Stock" : "Out of Stock"}
+                                                        </p>
+                                                        <p className="cart-item-shipping">Eligible for FREE Shipping</p>
+                                                    </div>
+                                                    <div className="cart-item-price-block">
+                                                        <p className="cart-item-price">${item.price}</p>
+                                                    </div>
+                                                </div>
 
-
-                                            <div className="col-4 col-lg-2 mt-4 mt-lg-0">
-                                                <p id="card_item_price">${item.price}</p>
-                                            </div>
-
-                                            <div className="col-4 col-lg-3 mt-4 mt-lg-0">
-                                                <div className="stockCounter d-inline">
-                                                    <span className="btn btn-danger minus" onClick={() => decreaseQty(item)}>-</span>
-                                                                    <input type="number" className="form-control count d-inline" value={item.quantity} readOnly />
-
-                                                    <span className="btn btn-primary plus" onClick={() => increaseQty(item)}>+</span>
+                                                <div className="cart-item-actions">
+                                                    <div className="stockCounter">
+                                                        <span className="qty-btn minus" onClick={() => decreaseQty(item)}>
+                                                            <i className="fa fa-minus"></i>
+                                                        </span>
+                                                        <input type="number" className="form-control count" value={item.quantity} readOnly />
+                                                        <span className="qty-btn plus" onClick={() => increaseQty(item)}>
+                                                            <i className="fa fa-plus"></i>
+                                                        </span>
+                                                    </div>
+                                                    <span className="action-separator">|</span>
+                                                    <span className="delete-link" onClick={() => dispatch(removeItemFromCart(item.product))}>Delete</span>
+                                                    <span className="action-separator">|</span>
+                                                    <span className="save-link">Save for later</span>
                                                 </div>
                                             </div>
-
-                                            <div className="col-4 col-lg-1 mt-4 mt-lg-0">
-                                                <i id="delete_cart_item" onClick={() => dispatch(removeItemFromCart(item.product))} className="fa fa-trash btn btn-danger"></i>
-                                            </div>
-
                                         </div>
                                     </div>
+                                    <hr />
                                 </Fragment>
                                 )
                             )

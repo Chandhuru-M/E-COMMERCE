@@ -2,95 +2,111 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import MetaData from '../layouts/MetaData';
+import MerchantSidebar from './MerchantSidebar';
 
 export default function MerchantDashboard() {
   const { user } = useSelector(state => state.authState);
 
   return (
-    <div className="container container-fluid">
+    <div className="row m-0">
       <MetaData title={'Merchant Dashboard'} />
-      <div className="row">
-        <div className="col-12">
-          <h1 className="my-4">Welcome, {user?.name}!</h1>
-          <p className="lead">Manage your store operations</p>
+      <div className="col-12 col-md-auto p-0">
+          <MerchantSidebar/>
+      </div>
+      
+      <div className="col-12 col-md">
+        <div className="dashboard-content container-fluid px-4">
+          <div className="mb-4 mt-4">
+            <h1 className="h3 text-gray-800">Merchant Dashboard</h1>
+            <h5 className="text-muted mt-2">Welcome, {user?.name}</h5>
+          </div>
 
-          <div className="row mt-5">
+          <div className="row">
             {/* POS System Card */}
-            <div className="col-md-6 mb-4">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body text-center p-5">
-                  <i className="fa fa-barcode fa-4x text-success mb-3"></i>
-                  <h3 className="card-title">POS System</h3>
-                  <p className="card-text text-muted">
-                    Scan barcodes, manage cart, and process walk-in customer sales
-                  </p>
-                  <Link to="/pos" className="btn btn-success btn-lg mt-3">
-                    <i className="fa fa-barcode mr-2"></i> Open POS
-                  </Link>
+            <div className="col-xl-4 col-md-6 mb-4">
+              <div className="card dashboard-card h-100 shadow-sm border-0">
+                <div className="card-body">
+                  <div className="row no-gutters align-items-center">
+                    <div className="col mr-2">
+                      <div className="text-xs font-weight-bold text-success text-uppercase mb-1">
+                        Point of Sale</div>
+                      <div className="h5 mb-0 font-weight-bold text-gray-800">Open POS</div>
+                    </div>
+                  </div>
+                  <Link to="/pos" className="stretched-link"></Link>
                 </div>
               </div>
             </div>
 
             {/* Inventory Management Card */}
-            <div className="col-md-6 mb-4">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body text-center p-5">
-                  <i className="fa fa-boxes fa-4x text-primary mb-3"></i>
-                  <h3 className="card-title">Inventory</h3>
-                  <p className="card-text text-muted">
-                    View and manage your product inventory and stock levels
-                  </p>
-                  <Link to="/merchant/inventory" className="btn btn-primary btn-lg mt-3">
-                    <i className="fa fa-boxes mr-2"></i> Manage Inventory
-                  </Link>
+            <div className="col-xl-4 col-md-6 mb-4">
+              <div className="card dashboard-card h-100 shadow-sm border-0">
+                <div className="card-body">
+                  <div className="row no-gutters align-items-center">
+                    <div className="col mr-2">
+                      <div className="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                        Inventory</div>
+                      <div className="h5 mb-0 font-weight-bold text-gray-800">Manage Stock</div>
+                    </div>
+                    <div className="col-auto">
+                      <i className="fas fa-boxes fa-2x text-gray-300"></i>
+                    </div>
+                  </div>
+                  <Link to="/merchant/inventory" className="stretched-link"></Link>
                 </div>
               </div>
             </div>
 
             {/* Orders Card */}
-            <div className="col-md-6 mb-4">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body text-center p-5">
-                  <i className="fa fa-shopping-cart fa-4x text-info mb-3"></i>
-                  <h3 className="card-title">Orders</h3>
-                  <p className="card-text text-muted">
-                    View all orders processed through your POS system
-                  </p>
-                  <Link to="/merchant/orders" className="btn btn-info btn-lg mt-3">
-                    <i className="fa fa-shopping-cart mr-2"></i> View Orders
-                  </Link>
+            <div className="col-xl-4 col-md-6 mb-4">
+              <div className="card dashboard-card h-100 shadow-sm border-0">
+                <div className="card-body">
+                  <div className="row no-gutters align-items-center">
+                    <div className="col mr-2">
+                      <div className="text-xs font-weight-bold text-info text-uppercase mb-1">
+                        Orders</div>
+                      <div className="h5 mb-0 font-weight-bold text-gray-800">View Orders</div>
+                    </div>
+                  </div>
+                  <Link to="/merchant/orders" className="stretched-link"></Link>
                 </div>
               </div>
             </div>
 
             {/* Analytics Card */}
-            <div className="col-md-6 mb-4">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body text-center p-5">
-                  <i className="fa fa-chart-line fa-4x text-warning mb-3"></i>
-                  <h3 className="card-title">Analytics</h3>
-                  <p className="card-text text-muted">
-                    View sales reports and business insights
-                  </p>
-                  <Link to="/merchant/analytics" className="btn btn-warning btn-lg mt-3">
-                    <i className="fa fa-chart-line mr-2"></i> View Analytics
-                  </Link>
+            <div className="col-xl-4 col-md-6 mb-4">
+              <div className="card dashboard-card h-100 shadow-sm border-0">
+                <div className="card-body">
+                  <div className="row no-gutters align-items-center">
+                    <div className="col mr-2">
+                      <div className="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                        Analytics</div>
+                      <div className="h5 mb-0 font-weight-bold text-gray-800">Business Insights</div>
+                    </div>
+                    <div className="col-auto">
+                      <i className="fas fa-chart-line fa-2x text-gray-300"></i>
+                    </div>
+                  </div>
+                  <Link to="/merchant/analytics" className="stretched-link"></Link>
                 </div>
               </div>
             </div>
 
             {/* Support Center Card */}
-            <div className="col-md-6 mb-4">
-              <div className="card border-0 shadow-sm h-100">
-                <div className="card-body text-center p-5">
-                  <i className="fa fa-headset fa-4x text-danger mb-3"></i>
-                  <h3 className="card-title">Support Center</h3>
-                  <p className="card-text text-muted">
-                    Get help with payments, shipping, and store management
-                  </p>
-                  <Link to="/merchant/support" className="btn btn-danger btn-lg mt-3">
-                    <i className="fa fa-headset mr-2"></i> Get Support
-                  </Link>
+            <div className="col-xl-4 col-md-6 mb-4">
+              <div className="card dashboard-card h-100 shadow-sm border-0">
+                <div className="card-body">
+                  <div className="row no-gutters align-items-center">
+                    <div className="col mr-2">
+                      <div className="text-xs font-weight-bold text-danger text-uppercase mb-1">
+                        Support Center</div>
+                      <div className="h5 mb-0 font-weight-bold text-gray-800">Get Help</div>
+                    </div>
+                    <div className="col-auto">
+                      <i className="fas fa-headset fa-2x text-gray-300"></i>
+                    </div>
+                  </div>
+                  <Link to="/merchant/support" className="stretched-link"></Link>
                 </div>
               </div>
             </div>

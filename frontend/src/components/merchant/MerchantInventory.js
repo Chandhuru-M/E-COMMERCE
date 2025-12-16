@@ -109,20 +109,20 @@ export default function MerchantInventory() {
                     )}
                   </td>
                   <td>
-                    <div className="btn-group" role="group">
+                    <div className="d-flex">
                       <Link 
                         to={`/merchant/product/${product._id}`} 
-                        className="btn btn-sm btn-primary"
+                        className="btn btn-sm btn-primary mr-2"
                         title="Edit Product"
                       >
-                        <i className="fa fa-pencil-alt"></i>
+                        <i className="fa fa-pencil-alt mr-1"></i> Edit
                       </Link>
                       <button 
                         onClick={() => deleteHandler(product._id)}
                         className="btn btn-sm btn-danger"
                         title="Delete Product"
                       >
-                        <i className="fa fa-trash"></i>
+                        <i className="fa fa-trash mr-1"></i> Delete
                       </button>
                     </div>
                   </td>

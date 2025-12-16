@@ -828,7 +828,9 @@ export default function ChatAssistant() {
   return (
     <>
       <button className="chat-float-btn" onClick={() => setIsOpen(!isOpen)}>
-        💬
+        <svg width="45" height="45" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+          <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" />
+        </svg>
       </button>
 
       {isOpen && (
@@ -926,11 +928,15 @@ export default function ChatAssistant() {
           </div>
 
           <div className="chat-body">
-            <div className="lang-select">
-              <select value={lang} onChange={(e) => setLang(e.target.value)}>
-                <option value="ta-IN">தமிழ்</option>
-                <option value="hi-IN">हिंदी</option>
-                <option value="en-US">English</option>
+            <div className="lang-select" style={{ marginBottom: '10px' }}>
+              <select 
+                value={lang} 
+                onChange={(e) => setLang(e.target.value)}
+                className="chat-lang-select"
+              >
+                <option value="ta-IN">🎙️ தமிழ் (Tamil)</option>
+                <option value="hi-IN">🎙️ हिंदी (Hindi)</option>
+                <option value="en-US">🎙️ English</option>
               </select>
             </div>
             <div id="qr-reader" style={{ width: '100%', marginBottom: '12px', display: 'none', borderRadius: '8px', overflow: 'hidden' }}></div>
@@ -972,14 +978,12 @@ export default function ChatAssistant() {
               disabled={isLoading}
             >
               {isListening ? (
-                // Active listening - professional microphone icon
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
                   <path d="M17 16.91c-1.48 1.46-3.51 2.36-5.77 2.36s-4.29-.9-5.77-2.36M9 18.9v-3.93m6 3.93v-3.93"/>
                 </svg>
               ) : (
-                // Idle microphone icon
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
                   <path d="M17 16.91c-1.48 1.46-3.51 2.36-5.77 2.36s-4.29-.9-5.77-2.36M9 18.9v-3.93m6 3.93v-3.93"/>
                 </svg>

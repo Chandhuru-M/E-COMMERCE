@@ -29,8 +29,8 @@ async function generateOrderPdf(order, user, options = {}) {
         resolve({ buffer: pdfData, filename, path: filePath });
       });
 
-      // Header with optional logo (uses backend/images/Aura.png if exists)
-      const logoPath = path.join(__dirname, '..', 'images', 'Aura.png');
+      // Header with optional logo (uses backend/images/Auralogo.png if exists)
+      const logoPath = path.join(__dirname, '..', 'images', 'Auralogo.png');
       if (fs.existsSync(logoPath)) {
         try {
           doc.image(logoPath, doc.page.width - 140, 30, { width: 100 });

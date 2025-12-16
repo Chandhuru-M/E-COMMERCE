@@ -4,7 +4,7 @@ import './theme/theme.css';
 import Home from './components/Home';
 import Footer from './components/layouts/Footer';
 import Header from './components/layouts/Header';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom'
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom'
 import { HelmetProvider } from 'react-helmet-async'
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -67,6 +67,17 @@ import AdminDashboard from './pages/AdminDashboard/AdminDashboard.jsx';
 
 // Configure axios to send credentials (cookies) with every request
 axios.defaults.withCredentials = true;
+
+const MainLayout = ({children}) => {
+  const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/pos') || location.pathname.startsWith('/merchant');
+  
+  return (
+      <div className={isAdminRoute ? 'container-fluid p-0' : 'container container-fluid'}>
+          {children}
+      </div>
+  )
+}
 
 function App() {
   const [stripeApiKey, setStripeApiKey] = useState("")
@@ -152,7 +163,7 @@ function App() {
         <div className="App">
           <HelmetProvider>
               <Header/>
-                <div className='container container-fluid'>
+                <MainLayout>
                   <ToastContainer theme='dark' />
                   <Routes>
                       <Route path='/' element={<Home/>} />
@@ -214,7 +225,7 @@ function App() {
                       <Route path='/merchant/support' element={<ProtectedRoute><MerchantHelpDesk/></ProtectedRoute>} />
                       <Route path='/admin/support' element={<ProtectedRoute isAdmin={true}><AdminDashboard/></ProtectedRoute>} />
                   </Routes>
-                </div>
+                </MainLayout>
 
             {/* ⭐ Add Chatbot Toggle Button Here */}
             <ChatAssistant />
