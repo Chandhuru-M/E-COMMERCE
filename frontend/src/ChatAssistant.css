@@ -109,6 +109,8 @@
 .chat-welcome p {
   margin: 10px 0;
   color: var(--color-text-secondary);
+  font-size: 1.4rem; /* Increased font size */
+  font-weight: 600;
 }
 
 .chat-welcome ul {

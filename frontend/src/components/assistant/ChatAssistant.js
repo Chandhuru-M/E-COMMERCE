@@ -836,7 +836,7 @@ export default function ChatAssistant() {
       {isOpen && (
         <div className="chat-window">
           <div className="chat-header">
-            <strong>🤖 AI Shopping Assistant</strong>
+            <strong>AI Shopping Assistant</strong>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               <button 
                 onClick={openScanner} 
@@ -942,11 +942,7 @@ export default function ChatAssistant() {
             <div id="qr-reader" style={{ width: '100%', marginBottom: '12px', display: 'none', borderRadius: '8px', overflow: 'hidden' }}></div>
             {messages.length === 0 && (
               <div className="chat-welcome">
-                <p>Ask me:</p>
-                <ul>
-                  <li>"Show me laptops"</li>
-                  <li>"Find phones under 30000"</li>
-                </ul>
+                <p>✨ What can I help with?</p>
               </div>
             )}
 
