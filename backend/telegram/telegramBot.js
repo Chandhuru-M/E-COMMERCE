@@ -221,27 +221,50 @@ async function sendOrderUpdateToUser(userId, title, text, orderIdOrOrder, option
 
 async function notifyOrderStatusChanged(order) {
   let orderDoc = order;
-  if (!orderDoc || typeof orderDoc === "string") {
-    orderDoc = await Order.findById(order);
-  }
-  if (!orderDoc) {
-    console.log('⚪ notifyOrderStatusChanged called but order not found');
+  try {
+    if (!orderDoc || typeof orderDoc === "string") {
+      // populate products so we can show names and ids
+      orderDoc = await Order.findById(order).populate('orderItems.product');
+    }
+
+    if (!orderDoc) {
+      console.log('⚪ notifyOrderStatusChanged called but order not found');
+      return false;
+    }
+
+    const userId = orderDoc.user ? orderDoc.user.toString() : null;
+    console.log(`🔔 notifyOrderStatusChanged for order ${orderDoc._id}; userId=${userId}; deliveryStatus=${orderDoc.deliveryStatus}; orderStatus=${orderDoc.orderStatus}`);
+
+    if (!userId) {
+      console.log('⚪ No user associated with order — skipping Telegram notification');
+      return false;
+    }
+
+    // Build items list with product name and id
+    const items = Array.isArray(orderDoc.orderItems) ? orderDoc.orderItems : [];
+    const itemsText = items.length > 0
+      ? items.map(it => {
+          const prod = (it.product && (typeof it.product === 'object')) ? it.product : null;
+          const name = prod && prod.name ? prod.name : (it.name || 'Unknown product');
+          const id = prod && prod._id ? String(prod._id) : (it.product ? String(it.product) : 'N/A');
+          const qty = it.quantity || it.qty || 1;
+          return `- ${name} (ID: ${id}) x${qty}`;
+        }).join('\n')
+      : 'No items';
+
+    const tracking = orderDoc.trackingId || orderDoc.tracking || 'N/A';
+    const eta = orderDoc.eta || orderDoc.estimatedDelivery || 'Updating soon';
+
+    const title = `Order ${orderDoc._id} status update`;
+    const text = `Status: ${orderDoc.deliveryStatus || orderDoc.orderStatus}\nTotal: $${orderDoc.totalPrice}\n\nItems:\n${itemsText}\n\nTracking ID: ${tracking}\nETA: ${eta}`;
+
+    const result = await sendOrderUpdateToUser(orderDoc.user, title, text, orderDoc);
+    console.log(`🔔 sendOrderUpdateToUser result: ${result}`);
+    return result;
+  } catch (err) {
+    console.error('notifyOrderStatusChanged error:', err?.message || err);
     return false;
   }
-
-  const userId = orderDoc.user ? orderDoc.user.toString() : null;
-  console.log(`🔔 notifyOrderStatusChanged for order ${orderDoc._id}; userId=${userId}; deliveryStatus=${orderDoc.deliveryStatus}; orderStatus=${orderDoc.orderStatus}`);
-
-  if (!userId) {
-    console.log('⚪ No user associated with order — skipping Telegram notification');
-    return false;
-  }
-
-  const title = `Order ${orderDoc._id} status update`;
-  const text = `Status: ${orderDoc.deliveryStatus || orderDoc.orderStatus}\nTotal: $${orderDoc.totalPrice}\nOrder items: ${orderDoc.orderItems ? orderDoc.orderItems.length : 0}`;
-  const result = await sendOrderUpdateToUser(userId, title, text, orderDoc);
-  console.log(`🔔 sendOrderUpdateToUser result: ${result}`);
-  return result;
 }
 
 // Shopping functions

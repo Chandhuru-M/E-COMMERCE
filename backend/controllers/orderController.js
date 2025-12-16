@@ -5,6 +5,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const telegramBot = require("../telegram/telegramBot");
 const User = require("../models/userModel");
 const RecommendationEngine = require("../services/recommendationEngine");
+const { sendNotificationEmail, sendOrderReceiptEmail } = require('../services/emailService');
 const STATUS_FLOW = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"];
 
 
@@ -460,6 +461,38 @@ exports.newOrder = catchAsyncError(async (req, res) => {
     order.user,
     `🛒 *Order Placed Successfully!*\n\n🆔 Order ID: ${order._id}\n💰 Total: ₹${order.totalPrice}`
   );
+
+  // Send order confirmation email to user
+  try {
+    const userDoc = await User.findById(order.user);
+    if (userDoc && userDoc.email) {
+      const subject = `Order Placed: ${order._id}`;
+      const itemsHtml = (order.orderItems || []).map(it => {
+        const name = (it.name || (it.product && it.product.name) || 'Product');
+        const id = (it.product && it.product._id) ? String(it.product._id) : (it.product || 'N/A');
+        const qty = it.quantity || it.qty || 1;
+        const price = it.price || it.pricePerUnit || '';
+        return `<li>${name} (ID: ${id}) x${qty} ${price ? '- ₹' + price : ''}</li>`;
+      }).join('');
+
+      const html = `
+        <h2>Order Placed Successfully</h2>
+        <p>Hi ${userDoc.name || 'Customer'},</p>
+        <p>Thank you for your order. Your order ID is <strong>${order._id}</strong>.</p>
+        <p><strong>Total:</strong> ₹${order.totalPrice}</p>
+        <h3>Items</h3>
+        <ul>${itemsHtml}</ul>
+        <p>We will notify you when your order ships.</p>
+      `;
+
+      const emailRes = await sendOrderReceiptEmail(order, userDoc);
+      console.log('Order confirmation email (with PDF) sent:', emailRes);
+    } else {
+      console.log('No user email found for order notification');
+    }
+  } catch (emailErr) {
+    console.error('Error sending order confirmation email:', emailErr?.message || emailErr);
+  }
 
   res.status(201).json({ success: true, order });
 });

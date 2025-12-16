@@ -48,10 +48,33 @@
 // };
 // backend/agents/inventoryAgent.js
 const inventoryService = require("../services/inventoryService");
+const Product = require("../models/productModel");
 
 class InventoryAgent {
   async reserve(userId, items) {
     return await inventoryService.reserveStock(userId, items);
+  }
+
+  async checkInventory(productName) {
+    try {
+      // Simple regex search for the product
+      const product = await Product.findOne({ 
+        name: { $regex: productName, $options: "i" } 
+      });
+
+      if (product) {
+        return {
+          found: true,
+          product: product.name,
+          stock: product.stock,
+          message: product.stock > 0 ? "In Stock" : "Out of Stock"
+        };
+      }
+      return { found: false, message: "Product not found" };
+    } catch (error) {
+      console.error("Inventory check error:", error);
+      return { error: "Error checking inventory" };
+    }
   }
 }
 

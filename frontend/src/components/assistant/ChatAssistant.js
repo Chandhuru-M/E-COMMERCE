@@ -224,9 +224,18 @@ export default function ChatAssistant() {
       }
 
       const headers = sessionId ? { "x-session-id": sessionId } : {};
+      
+      // Pass the current cart items from Redux state to the backend
+      const payload = { 
+        message: input, 
+        page: 1, 
+        limit: 6,
+        cartItems: cartItems // Pass frontend cart to backend
+      };
+
       const res = await axios.post(
         "/api/v1/sales/parse-search",
-        { message: input, page: 1, limit: 6 },
+        payload,
         { headers, withCredentials: true }
       );
 

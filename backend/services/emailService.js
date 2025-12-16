@@ -1,14 +1,33 @@
 const nodemailer = require('nodemailer');
 const path = require('path');
+const PdfService = require('./pdfService');
 
 // Configure email transporter
-const transporter = nodemailer.createTransport({
-  service: process.env.EMAIL_SERVICE || 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASSWORD
-  }
-});
+let transporter;
+if (process.env.SMTP_HOST) {
+  // Use explicit SMTP host (e.g., Mailtrap) when provided
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT ? Number(process.env.SMTP_PORT) : 587,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
+    },
+    secure: false,
+    tls: {
+      // Mailtrap and many dev SMTPs use self-signed certs
+      rejectUnauthorized: false
+    }
+  });
+} else {
+  transporter = nodemailer.createTransport({
+    service: process.env.EMAIL_SERVICE || 'gmail',
+    auth: {
+      user: process.env.EMAIL_USER,
+      pass: process.env.EMAIL_PASSWORD
+    }
+  });
+}
 
 // Email templates
 const emailTemplates = {
@@ -114,8 +133,8 @@ const sendTicketEmail = async ({
   satisfactionScore
 }) => {
   try {
-    if (!to || !process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
-      console.warn('⚠️ Email configuration incomplete - skipping email');
+    if (!to || !transporter) {
+      console.warn('⚠️ Email configuration incomplete or transporter not initialized - skipping email');
       return false;
     }
 
@@ -144,8 +163,10 @@ const sendTicketEmail = async ({
         return false;
     }
 
+    const fromAddress = process.env.SMTP_FROM_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const fromName = process.env.SMTP_FROM_NAME || '';
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: fromName ? `${fromName} <${fromAddress}>` : fromAddress,
       to,
       subject: emailContent.subject,
       html: emailContent.html
@@ -165,12 +186,15 @@ const sendTicketEmail = async ({
  */
 const sendBulkEmails = async (recipients, subject, htmlContent) => {
   try {
-    if (!recipients.length || !process.env.EMAIL_USER) {
+    if (!recipients.length || !transporter) {
       return false;
     }
 
+    const fromAddress = process.env.SMTP_FROM_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const fromName = process.env.SMTP_FROM_NAME || '';
+
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: fromName ? `${fromName} <${fromAddress}>` : fromAddress,
       to: recipients.join(','),
       subject,
       html: htmlContent
@@ -190,12 +214,13 @@ const sendBulkEmails = async (recipients, subject, htmlContent) => {
  */
 const sendNotificationEmail = async (adminEmail, subject, message) => {
   try {
-    if (!adminEmail || !process.env.EMAIL_USER) {
-      return false;
-    }
+    if (!adminEmail || !transporter) return false;
+
+    const fromAddress = process.env.SMTP_FROM_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const fromName = process.env.SMTP_FROM_NAME || '';
 
     const mailOptions = {
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      from: fromName ? `${fromName} <${fromAddress}>` : fromAddress,
       to: adminEmail,
       subject,
       html: `<h2>${subject}</h2><p>${message}</p>`
@@ -210,9 +235,59 @@ const sendNotificationEmail = async (adminEmail, subject, message) => {
   }
 };
 
+// Export functions (sendOrderReceiptEmail is defined below)
 module.exports = {
   sendTicketEmail,
   sendBulkEmails,
   sendNotificationEmail,
   transporter
 };
+
+/**
+ * Send order receipt email with PDF attachment
+ * @param {Object} order
+ * @param {Object} user - user document with at least `email` and `name`
+ */
+const sendOrderReceiptEmail = async (order, user) => {
+  try {
+    if (!user || !user.email || !transporter) return false;
+
+    // Generate PDF (returns buffer, filename and saved path)
+    const { buffer, filename, path: receiptPath } = await PdfService.generateOrderPdf(order, user);
+
+    const fromAddress = process.env.SMTP_FROM_EMAIL || process.env.EMAIL_FROM || process.env.EMAIL_USER;
+    const fromName = process.env.SMTP_FROM_NAME || '';
+    const mailOptions = {
+      from: fromName ? `${fromName} <${fromAddress}>` : fromAddress,
+      to: user.email,
+      subject: `Order Confirmation - ${order._id}`,
+      html: `
+        <h2>Order Placed Successfully</h2>
+        <p>Hi ${user.name || 'Customer'},</p>
+        <p>Thank you for your order. Your order ID is <strong>${order._id}</strong>.</p>
+        <p>Please find your receipt attached as a PDF.</p>
+      `,
+      attachments: (
+        () => {
+          const atts = [];
+          if (receiptPath) {
+            atts.push({ filename: filename || `receipt_${order._id}.pdf`, path: receiptPath, contentType: 'application/pdf' });
+          } else if (buffer) {
+            atts.push({ filename: filename || `receipt_${order._id}.pdf`, content: buffer, contentType: 'application/pdf' });
+          }
+          return atts;
+        }
+      )()
+    };
+
+    await transporter.sendMail(mailOptions);
+    console.log(`✅ Order receipt email sent to ${user.email}`);
+    return true;
+  } catch (err) {
+    console.error('❌ sendOrderReceiptEmail error:', err?.message || err);
+    return false;
+  }
+};
+
+// Attach sendOrderReceiptEmail to exports now that it's defined
+module.exports.sendOrderReceiptEmail = sendOrderReceiptEmail;

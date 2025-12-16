@@ -35,6 +35,9 @@
   "devDependencies": {
     "nodemon": "^3.0.1"
   },
+  "optionalDependencies": {
+    "pdfkit": "^0.13.0"
+  },
   "keywords": [
     "ecommerce",
     "api",
