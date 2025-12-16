@@ -60,6 +60,7 @@ import MerchantRequests from './components/admin/MerchantRequests';
 // Help Desk components
 import HelpDesk from './pages/HelpDesk/HelpDesk.jsx';
 import MerchantHelpDesk from './pages/HelpDesk/MerchantHelpDesk.jsx';
+import TicketDetail from './pages/HelpDesk/TicketDetail.jsx';
 import AdminDashboard from './pages/AdminDashboard/AdminDashboard.jsx';
 
 // Configure axios to send credentials (cookies) with every request
@@ -206,6 +207,7 @@ function App() {
                       
                       {/* Help Desk Routes */}
                       <Route path='/support' element={<ProtectedRoute><HelpDesk/></ProtectedRoute>} />
+                      <Route path='/helpdesk/:id' element={<ProtectedRoute><TicketDetail/></ProtectedRoute>} />
                       <Route path='/merchant/support' element={<ProtectedRoute><MerchantHelpDesk/></ProtectedRoute>} />
                       <Route path='/admin/support' element={<ProtectedRoute isAdmin={true}><AdminDashboard/></ProtectedRoute>} />
                   </Routes>

@@ -201,6 +201,16 @@ export default function ChatAssistant() {
     recognitionRef.current = recognition;
   }, [lang]);
 
+  // Initialize sessionId from localStorage so session persists across reloads
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('chatSessionId');
+      if (stored) setSessionId(stored);
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
   function pushBot(text, extras = {}) {
     const botMessage = { sender: "bot", text, ...extras };
     setMessages(prev => [...prev, botMessage]);
@@ -241,7 +251,10 @@ export default function ChatAssistant() {
 
       const data = res.data;
 
-      if (data.sessionId) setSessionId(data.sessionId);
+      if (data.sessionId) {
+        setSessionId(data.sessionId);
+        try { localStorage.setItem('chatSessionId', data.sessionId); } catch (e) { }
+      }
 
       const items = (data.items || data.data || []).map(i => ({
         id: i.id || i._id,
@@ -602,13 +615,13 @@ export default function ChatAssistant() {
   const sendBarcodeToChatAssistant = async (scannedCode) => {
     try {
       pushBot(`🔍 Looking up barcode: ${scannedCode}...`);
-      
+      const headers = sessionId ? { 'x-session-id': sessionId } : {};
       const response = await axios.post("/api/v1/assistant", {
         message: {
           type: "barcode_scan",
           data: scannedCode
         }
-      });
+      }, { headers });
 
       if (response.data.success) {
         pushBot(response.data.reply);

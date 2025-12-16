@@ -17,24 +17,33 @@ exports.parseAndSearch = catchAsyncError(async (req, res) => {
 
   const user = req.user;
 
-  // Maintain session for multi-turn
+  // Maintain session for multi-turn (load existing or create new)
   let sessionId = req.headers["x-session-id"];
-  if (!sessionId) {
-    sessionId = createSession(user._id, { lastQuery: message });
+  let stored = null;
+  if (sessionId) {
+    stored = getSession(sessionId);
   }
+
+  if (!sessionId || !stored) {
+    sessionId = createSession(user._id, { lastQuery: message });
+    stored = getSession(sessionId);
+  }
+
+  // Build sessionContext from stored context and user/cart info
+  const sessionContext = stored?.context || {};
 
   // Use the Gemini-powered ChatAssistantAgent
   // Use the cart items passed from frontend if available, otherwise try DB
-  let userCart = [];
+  let userCart = sessionContext.cart || [];
   
-  if (cartItems && cartItems.length > 0) {
+    if (cartItems && cartItems.length > 0) {
       // Use frontend cart
       userCart = cartItems.map(item => ({
-          product: item.name,
-          quantity: item.quantity,
-          price: item.price
+        product: item.name,
+        quantity: item.quantity,
+        price: item.price
       }));
-  } else if (user) {
+    } else if (user) {
       try {
           const Cart = require("../models/cartModel");
           const cart = await Cart.findOne({ user: user._id });
@@ -50,13 +59,21 @@ exports.parseAndSearch = catchAsyncError(async (req, res) => {
       }
   }
 
-  const sessionContext = { user, cart: userCart }; 
+  // ensure user info is available in session context
+  sessionContext.user = user;
+  sessionContext.cart = userCart;
   
   console.log("Processing message:", message);
 
   let agentResponse;
   try {
     agentResponse = await chatAssistantAgent.handleUserMessage(message, sessionContext);
+    // Persist any changes the agent made to sessionContext back into session store
+    try {
+      updateSession(sessionId, sessionContext);
+    } catch (e) {
+      console.warn('Failed to update session store:', e.message || e);
+    }
   } catch (error) {
     console.error("Error in chatAssistantAgent:", error);
     return res.status(500).json({ success: false, message: "Internal Server Error in Agent" });

@@ -45,6 +45,41 @@ module.exports = {
 
       // 2. Normal text-based message
       const userMessage = typeof message === "string" ? message : "";
+      const lower = userMessage.toLowerCase();
+
+      // Quick keyword-based support flow: offer to create a support ticket
+      const supportKeywords = ['support', 'complaint', 'issue', 'problem', 'help', 'raise a ticket', 'report'];
+      const isSupport = supportKeywords.some(k => lower.includes(k));
+
+      if (isSupport && !session.pendingTicket) {
+        // Save pending description and ask for confirmation
+        session.pendingTicket = { description: userMessage };
+        return {
+          success: true,
+          reply: "I can create a support ticket for you based on your message. Reply 'yes' to create the ticket or 'no' to cancel.",
+          session
+        };
+      }
+
+      // If user confirms and we have a pending ticket, create it
+      if (session.pendingTicket && ['yes', 'y'].includes(lower.trim())) {
+        // Build subject from first 60 characters
+        const subject = (session.pendingTicket.subject || userMessage.split('\n')[0] || userMessage).slice(0, 60);
+        const description = session.pendingTicket.description || userMessage;
+
+        // Call tool to create ticket
+        const ticketResult = await executeTool('create_support_ticket', { subject, description }, session);
+
+        // clear pending
+        delete session.pendingTicket;
+
+        if (ticketResult && ticketResult.success) {
+          const ticketId = ticketResult.ticket.ticketId || ticketResult.ticket._id || 'N/A';
+          return { success: true, reply: `Your support ticket has been created (ID: ${ticketId}). Our team will contact you shortly.`, session };
+        }
+
+        return { success: false, reply: 'Sorry, I could not create a ticket right now. Please try again later.', session };
+      }
       
       // Start a chat session
       const chat = model.startChat({

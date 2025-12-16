@@ -96,6 +96,22 @@ const tools = [
           properties: {}
         }
       }
+      ,
+      {
+        name: "create_support_ticket",
+        description: "Create a support ticket on behalf of the user. Provide subject, description, category and optional priority and relatedOrderId.",
+        parameters: {
+          type: "OBJECT",
+          properties: {
+            subject: { type: "STRING", description: "Short subject for the ticket" },
+            description: { type: "STRING", description: "Detailed description of the problem or request" },
+            category: { type: "STRING", description: "Ticket category (order, product, payment, delivery, other)" },
+            priority: { type: "STRING", description: "Priority (LOW, MEDIUM, HIGH, URGENT)" },
+            relatedOrderId: { type: "STRING", description: "Optional related order ID" }
+          },
+          required: ["subject", "description"]
+        }
+      }
     ]
   }
 ];
@@ -138,6 +154,68 @@ const executeTool = async (functionName, args, session) => {
           message: "Here are the items in your cart:", 
           items: session.cart.map(item => `${item.product} (x${item.quantity || 1}) - $${item.price || '?'}`) 
         };
+
+      case "create_support_ticket": {
+        // Create ticket using internal model. session.user should contain user info.
+        const Ticket = require('../models/ticketModel');
+        const { sendTicketEmail } = require('../services/emailService');
+        const { sendTicketNotification } = require('../telegram/ticketNotifications');
+
+        const { subject, description, category, priority, relatedOrderId } = args || {};
+        const userId = session.user?._id || null;
+        const userName = session.user?.name || 'Customer';
+        const userEmail = session.user?.email || null;
+
+        if (!subject || !description) return { error: 'subject and description are required' };
+
+        // generate simple ticket id
+        const generateTicketId = async () => {
+          const count = await Ticket.countDocuments();
+          return `TKT-${Date.now()}-${count + 1}`;
+        };
+
+        const ticketId = await generateTicketId();
+
+        const ticketData = {
+          ticketId,
+          type: 'USER_QUERY',
+          subject,
+          description,
+          category: category || 'other',
+          priority: (priority || 'MEDIUM').toUpperCase(),
+          userId: userId,
+          relatedOrderId: relatedOrderId || null,
+          messages: [
+            {
+              sender: userId,
+              senderRole: 'User',
+              senderName: userName,
+              message: description,
+              timestamp: new Date()
+            }
+          ],
+          status: 'OPEN',
+          createdAt: new Date()
+        };
+
+        const ticket = await Ticket.create(ticketData);
+
+        // Send confirmation email and notify admins
+        if (userEmail) {
+          try {
+            await sendTicketEmail({ to: userEmail, type: 'TICKET_CREATED', ticket, userName });
+          } catch (e) {
+            console.warn('Failed to send ticket confirmation email:', e.message);
+          }
+        }
+        try {
+          await sendTicketNotification({ type: 'TICKET_CREATED', ticket, userName });
+        } catch (e) {
+          console.warn('Failed to send ticket notification:', e.message);
+        }
+
+        return { success: true, ticket };
+      }
 
       default:
         return { error: "Function not found" };

@@ -25,12 +25,8 @@ exports.createTicket = async (req, res) => {
     const userEmail = req.user.email;
     const userName = req.user.name;
 
-    // Validate required fields
     if (!type || !subject || !description) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Type, subject, and description are required' 
-      });
+      return res.status(400).json({ success: false, message: 'Type, subject, and description are required' });
     }
 
     const ticketId = await generateTicketId();
@@ -50,53 +46,39 @@ exports.createTicket = async (req, res) => {
       createdAt: new Date()
     };
 
-    // Set merchantId if it's a merchant type ticket
-    if (type.includes('MERCHANT')) {
+    if (type && String(type).toUpperCase().includes('MERCHANT')) {
       ticketData.merchantId = userId;
     }
 
-    // Add first message
     ticketData.messages = [
       {
         sender: userId,
         senderRole: 'User',
         senderName: userName,
         message: description,
-        attachments: attachments || []
+        attachments: attachments || [],
+        timestamp: new Date()
       }
     ];
 
     const ticket = await Ticket.create(ticketData);
-
-    // Populate for response
     await ticket.populate('userId', 'name email').populate('relatedOrderId');
 
     // Send confirmation email
-    await sendTicketEmail({
+    sendTicketEmail({
       to: userEmail,
       type: 'TICKET_CREATED',
       ticket,
       userName
     }).catch(err => console.error('Email error:', err.message));
 
-    // Send Telegram notification to admin
-    await sendTicketNotification({
-      type: 'TICKET_CREATED',
-      ticket,
-      userName
-    }).catch(err => console.error('Telegram error:', err.message));
+    // Notify admins via telegram
+    sendTicketNotification({ type: 'TICKET_CREATED', ticket, userName }).catch(err => console.error('Telegram error:', err.message));
 
-    res.status(201).json({ 
-      success: true, 
-      message: 'Ticket created successfully',
-      ticket 
-    });
+    res.status(201).json({ success: true, message: 'Ticket created successfully', ticket });
   } catch (error) {
     console.error('Create ticket error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
@@ -104,307 +86,254 @@ exports.createTicket = async (req, res) => {
  * Get user's tickets
  */
 exports.getMyTickets = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const userRole = req.user.role;
-    const { status, priority, page = 1, limit = 10 } = req.query;
+        try {
+          const userId = req.user._id;
+          const userRole = req.user.role;
+          const { status, priority, page = 1, limit = 10 } = req.query;
 
-    // Build query based on user role
-    let query = {};
-    
-    // If user is a merchant, get merchant tickets; otherwise get user tickets
-    if (userRole === 'merchant_admin') {
-      query.merchantId = userId;
-    } else {
-      query.userId = userId;
-    }
-    
-    if (status) query.status = status;
-    if (priority) query.priority = priority;
+          let query = {};
+          if (userRole === 'merchant_admin') {
+            query.merchantId = userId;
+          } else {
+            query.userId = userId;
+          }
 
-    const skip = (page - 1) * limit;
+          if (status) query.status = status;
+          if (priority) query.priority = priority;
 
-    const tickets = await Ticket.find(query)
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit))
-      .populate('relatedOrderId', 'orderId totalPrice orderStatus')
-      .populate('relatedProductId', 'name price');
+          const skip = (page - 1) * limit;
 
-    const total = await Ticket.countDocuments(query);
+          const tickets = await Ticket.find(query)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(parseInt(limit))
+            .populate('relatedOrderId', 'orderId totalPrice orderStatus')
+            .populate('relatedProductId', 'name price');
 
-    res.status(200).json({ 
-      success: true, 
-      tickets,
-      pagination: {
-        current: parseInt(page),
-        total: Math.ceil(total / limit),
-        count: tickets.length,
-        totalRecords: total
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
+          const total = await Ticket.countDocuments(query);
 
-/**
- * Get single ticket with messages
- */
-exports.getTicketDetail = async (req, res) => {
-  try {
-    const { ticketId } = req.params;
-    const userId = req.user._id;
+          res.status(200).json({
+            success: true,
+            tickets,
+            pagination: {
+              current: parseInt(page),
+              total: Math.ceil(total / limit),
+              count: tickets.length,
+              totalRecords: total
+            }
+          });
+        } catch (error) {
+          res.status(500).json({ success: false, message: error.message });
+        }
+      };
 
-    const ticket = await Ticket.findById(ticketId)
-      .populate('messages.sender', 'name email avatar')
-      .populate('relatedOrderId')
-      .populate('relatedProductId')
-      .populate('assignedTo', 'name email');
+      /**
+       * Get single ticket with messages
+       * Supports lookup by Mongo _id or human `ticketId`.
+       */
+      exports.getTicketDetail = async (req, res) => {
+        try {
+          const { ticketId } = req.params;
+          const userId = req.user._id;
 
-    if (!ticket) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Ticket not found' 
-      });
-    }
+          // Try Mongo _id first, then human ticketId
+          let ticket = null;
+          if (/^[0-9a-fA-F]{24}$/.test(ticketId)) {
+            ticket = await Ticket.findById(ticketId)
+              .populate('messages.sender', 'name email avatar')
+              .populate('relatedOrderId')
+              .populate('relatedProductId')
+              .populate('assignedTo', 'name email');
+          }
 
-    // Verify user has access to this ticket
-    if (ticket.userId.toString() !== userId.toString() && ticket.merchantId?.toString() !== userId.toString()) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Unauthorized access' 
-      });
-    }
+          if (!ticket) {
+            ticket = await Ticket.findOne({ ticketId: ticketId })
+              .populate('messages.sender', 'name email avatar')
+              .populate('relatedOrderId')
+              .populate('relatedProductId')
+              .populate('assignedTo', 'name email');
+          }
 
-    res.status(200).json({ 
-      success: true, 
-      ticket 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
+          if (!ticket) {
+            console.warn('Ticket not found for id:', ticketId);
+            return res.status(404).json({ success: false, message: 'Ticket not found' });
+          }
 
-/**
- * Add message to ticket
- */
-exports.addMessage = async (req, res) => {
-  try {
-    const { ticketId } = req.params;
-    const { message, attachments = [] } = req.body;
-    const userId = req.user._id;
-    const userName = req.user.name;
+          // Access checks: owner, merchant, first message match, or admin
+          const ownerId = ticket.userId ? String(ticket.userId) : null;
+          const merchantId = ticket.merchantId ? String(ticket.merchantId) : null;
 
-    if (!message || message.trim() === '') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Message cannot be empty' 
-      });
-    }
+          const allowedByOwner = ownerId && ownerId === String(userId);
+          const allowedByMerchant = merchantId && merchantId === String(userId);
+          let allowedByMessage = false;
+          if (!(allowedByOwner || allowedByMerchant)) {
+            const firstMsg = ticket.messages && ticket.messages[0];
+            if (firstMsg) {
+              const nameMatch = firstMsg.senderName && firstMsg.senderName === req.user.name;
+              const emailMatch = firstMsg.senderName && req.user.email && firstMsg.senderName === req.user.email;
+              allowedByMessage = nameMatch || emailMatch;
+            }
+          }
 
-    const ticket = await Ticket.findById(ticketId);
+          if (!(allowedByOwner || allowedByMerchant || allowedByMessage || req.user.role === 'admin')) {
+            console.warn('Unauthorized access attempt by user:', req.user._id, 'for ticket:', ticketId);
+            return res.status(403).json({ success: false, message: 'Unauthorized access' });
+          }
 
-    if (!ticket) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Ticket not found' 
-      });
-    }
+          res.status(200).json({ success: true, ticket });
+        } catch (error) {
+          res.status(500).json({ success: false, message: error.message });
+        }
+      };
 
-    // Verify user has access
-    if (ticket.userId?.toString() !== userId.toString() && ticket.merchantId?.toString() !== userId.toString()) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Unauthorized' 
-      });
-    }
+      /**
+       * Add message to ticket
+       */
+      exports.addMessage = async (req, res) => {
+        try {
+          const { ticketId } = req.params;
+          const { message, attachments = [] } = req.body;
+          const userId = req.user._id;
+          const userName = req.user.name;
 
-    const newMessage = {
-      sender: userId,
-      senderRole: 'User',
-      senderName: userName,
-      message,
-      attachments,
-      timestamp: new Date()
-    };
+          if (!message || message.trim() === '') {
+            return res.status(400).json({ success: false, message: 'Message cannot be empty' });
+          }
 
-    ticket.messages.push(newMessage);
-    ticket.status = 'IN_PROGRESS';
-    ticket.updatedAt = new Date();
+          // Lookup
+          let ticket = null;
+          if (/^[0-9a-fA-F]{24}$/.test(ticketId)) {
+            ticket = await Ticket.findById(ticketId);
+          }
+          if (!ticket) {
+            ticket = await Ticket.findOne({ ticketId: ticketId });
+          }
 
-    await ticket.save();
-    await ticket.populate('messages.sender', 'name email');
+          if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
-    // Send notification email to assigned staff
-    if (ticket.assignedTo) {
-      await sendTicketEmail({
-        to: ticket.assignedToName,
-        type: 'TICKET_MESSAGE',
-        ticket,
-        userName,
-        message
-      }).catch(err => console.error('Email error:', err.message));
-    }
+          // Access checks
+          const ownerId = ticket.userId ? String(ticket.userId) : null;
+          const merchantId = ticket.merchantId ? String(ticket.merchantId) : null;
 
-    // Send Telegram notification
-    await sendTicketNotification({
-      type: 'TICKET_MESSAGE',
-      ticket,
-      userName,
-      message
-    }).catch(err => console.error('Telegram error:', err.message));
+          const allowedByOwner = ownerId && ownerId === String(userId);
+          const allowedByMerchant = merchantId && merchantId === String(userId);
+          let allowedByMessage = false;
+          if (!(allowedByOwner || allowedByMerchant)) {
+            const firstMsg = ticket.messages && ticket.messages[0];
+            if (firstMsg) {
+              const nameMatch = firstMsg.senderName && firstMsg.senderName === req.user.name;
+              const emailMatch = firstMsg.senderName && req.user.email && firstMsg.senderName === req.user.email;
+              allowedByMessage = nameMatch || emailMatch;
+            }
+          }
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Message added successfully',
-      ticket 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
+          if (!(allowedByOwner || allowedByMerchant || allowedByMessage || req.user.role === 'admin')) {
+            console.warn('Unauthorized access attempt by user:', req.user._id, 'for ticket:', ticketId);
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+          }
 
-/**
- * Rate and close ticket
- */
-exports.closeTicket = async (req, res) => {
-  try {
-    const { ticketId } = req.params;
-    const { satisfactionScore, feedback, resolutionNote } = req.body;
-    const userId = req.user._id;
+          const newMessage = {
+            sender: userId,
+            senderRole: 'User',
+            senderName: userName,
+            message,
+            attachments,
+            timestamp: new Date()
+          };
 
-    const ticket = await Ticket.findById(ticketId);
+          ticket.messages.push(newMessage);
+          ticket.status = 'IN_PROGRESS';
+          ticket.updatedAt = new Date();
 
-    if (!ticket) {
-      return res.status(404).json({ 
-        success: false, 
-        message: 'Ticket not found' 
-      });
-    }
+          await ticket.save();
+          await ticket.populate('messages.sender', 'name email');
 
-    // Verify ownership
-    if (ticket.userId?.toString() !== userId.toString()) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Unauthorized' 
-      });
-    }
+          // Notify assigned staff
+          if (ticket.assignedTo) {
+            const toAddress = (ticket.assignedTo && ticket.assignedTo.email) || ticket.assignedToName || null;
+            if (toAddress) {
+              sendTicketEmail({ to: toAddress, type: 'TICKET_MESSAGE', ticket, userName, message }).catch(err => console.error('Email error:', err.message));
+            }
+          }
 
-    ticket.status = 'CLOSED';
-    ticket.closedAt = new Date();
-    ticket.resolution = {
-      satisfactionScore: satisfactionScore || null,
-      feedback: feedback || null,
-      resolutionNote: resolutionNote || null
-    };
+          // Telegram/admin notification
+          sendTicketNotification({ type: 'TICKET_MESSAGE', ticket, userName, message }).catch(err => console.error('Telegram error:', err.message));
 
-    await ticket.save();
+          res.status(200).json({ success: true, message: 'Message added successfully', ticket });
+        } catch (error) {
+          res.status(500).json({ success: false, message: error.message });
+        }
+      };
 
-    // Send closure email
-    await sendTicketEmail({
-      to: req.user.email,
-      type: 'TICKET_CLOSED',
-      ticket,
-      userName: req.user.name,
-      satisfactionScore
-    }).catch(err => console.error('Email error:', err.message));
+      /**
+       * Rate and close ticket
+       */
+      exports.closeTicket = async (req, res) => {
+        try {
+          const { ticketId } = req.params;
+          const { satisfactionScore, feedback, resolutionNote } = req.body;
+          const userId = req.user._id;
 
-    res.status(200).json({ 
-      success: true, 
-      message: 'Ticket closed successfully',
-      ticket 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
+          const ticket = await Ticket.findById(ticketId) || await Ticket.findOne({ ticketId });
 
-/**
- * Get FAQ list
- */
-exports.getFAQ = async (req, res) => {
-  try {
-    const { category, userRole = 'USER', search } = req.query;
+          if (!ticket) return res.status(404).json({ success: false, message: 'Ticket not found' });
 
-    let query = { isActive: true };
+          if (ticket.userId?.toString() !== userId.toString()) {
+            return res.status(403).json({ success: false, message: 'Unauthorized' });
+          }
 
-    if (category) query.category = category;
-    
-    // Show FAQs relevant to user role
-    if (userRole) {
-      query.$or = [
-        { userRole: 'ALL' },
-        { userRole: userRole }
-      ];
-    }
+          ticket.status = 'CLOSED';
+          ticket.closedAt = new Date();
+          ticket.resolution = { satisfactionScore: satisfactionScore || null, feedback: feedback || null, resolutionNote: resolutionNote || null };
 
-    // Search functionality
-    if (search) {
-      query.$or = [
-        { question: { $regex: search, $options: 'i' } },
-        { answer: { $regex: search, $options: 'i' } }
-      ];
-    }
+          await ticket.save();
 
-    const faqs = await query 
-      ? Object.assign(query, { isActive: true })
-      : { isActive: true };
+          sendTicketEmail({ to: req.user.email, type: 'TICKET_CLOSED', ticket, userName: req.user.name, satisfactionScore }).catch(err => console.error('Email error:', err.message));
 
-    const faqList = await require('../models/faqModel').find(query)
-      .sort({ isPopular: -1, order: 1 })
-      .select('question answer category tags views helpfulCount');
+          res.status(200).json({ success: true, message: 'Ticket closed successfully', ticket });
+        } catch (error) {
+          res.status(500).json({ success: false, message: error.message });
+        }
+      };
 
-    res.status(200).json({ 
-      success: true, 
-      faqs: faqList,
-      count: faqList.length
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
+      /**
+       * Get FAQ list
+       */
+      exports.getFAQ = async (req, res) => {
+        try {
+          const { category, userRole = 'USER', search } = req.query;
+          let query = { isActive: true };
+          if (category) query.category = category;
 
-/**
- * Mark FAQ as helpful
- */
-exports.markFAQHelpful = async (req, res) => {
-  try {
-    const { faqId } = req.params;
-    const { helpful } = req.body;
+          if (userRole) {
+            query.$or = [{ userRole: 'ALL' }, { userRole }];
+          }
 
-    const FAQ = require('../models/faqModel');
-    const faq = await FAQ.findByIdAndUpdate(
-      faqId,
-      helpful 
-        ? { $inc: { helpfulCount: 1, views: 1 } }
-        : { $inc: { unhelpfulCount: 1, views: 1 } },
-      { new: true }
-    );
+          if (search) {
+            query.$or = [{ question: { $regex: search, $options: 'i' } }, { answer: { $regex: search, $options: 'i' } }];
+          }
 
-    res.status(200).json({ 
-      success: true, 
-      faq 
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: error.message 
-    });
-  }
-};
+          const faqList = await require('../models/faqModel').find(query).sort({ isPopular: -1, order: 1 }).select('question answer category tags views helpfulCount');
+
+          res.status(200).json({ success: true, faqs: faqList, count: faqList.length });
+        } catch (error) {
+          res.status(500).json({ success: false, message: error.message });
+        }
+      };
+
+      /**
+       * Mark FAQ as helpful
+       */
+      exports.markFAQHelpful = async (req, res) => {
+        try {
+          const { faqId } = req.params;
+          const { helpful } = req.body;
+
+          const FAQ = require('../models/faqModel');
+          const faq = await FAQ.findByIdAndUpdate(faqId, helpful ? { $inc: { helpfulCount: 1, views: 1 } } : { $inc: { unhelpfulCount: 1, views: 1 } }, { new: true });
+
+          res.status(200).json({ success: true, faq });
+        } catch (error) {
+          res.status(500).json({ success: false, message: error.message });
+        }
+      };
