@@ -101,7 +101,7 @@
 .stat-label {
   color: var(--color-text-tertiary);
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   font-weight: 500;
 }
 
@@ -167,7 +167,7 @@
   padding-right: 10px;
   color: white;
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
   transition: width 0.3s ease;
 }
 
@@ -278,13 +278,13 @@
   font-family: monospace;
   font-weight: bold;
   color: #666;
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
 }
 
 .priority-badge {
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.85rem; /* Increased from 0.75rem */
   font-weight: bold;
   color: white;
 }
@@ -317,7 +317,7 @@
 .ticket-item-customer {
   margin: 0 0 8px 0;
   color: #999;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
 }
 
 .ticket-item-status {
@@ -328,7 +328,7 @@
 .status-badge {
   padding: 4px 8px;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.85rem; /* Increased from 0.75rem */
   font-weight: bold;
 }
 
@@ -456,7 +456,7 @@
   margin: 0 0 5px 0;
   font-weight: bold;
   color: #333;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
 }
 
 .internal-badge {
@@ -465,7 +465,7 @@
   color: #c62828;
   padding: 2px 6px;
   border-radius: 3px;
-  font-size: 0.75rem;
+  font-size: 0.85rem; /* Increased from 0.75rem */
   margin-left: 8px;
 }
 
@@ -476,7 +476,7 @@
 
 .message-time {
   margin: 5px 0 0 0;
-  font-size: 0.8rem;
+  font-size: 0.9rem; /* Increased from 0.8rem */
   color: #999;
 }
 

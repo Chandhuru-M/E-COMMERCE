@@ -234,7 +234,7 @@
   padding: 4px 8px;
   border-radius: 4px;
   font-family: monospace;
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   color: #666;
   margin-bottom: 5px;
 }
@@ -247,7 +247,7 @@
 .badge {
   padding: 6px 12px;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   font-weight: 600;
 }
 
@@ -302,7 +302,7 @@
 
 .ticket-category {
   color: #666;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
   margin: 0 0 8px 0;
 }
 
@@ -316,7 +316,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   color: #999;
 }
 
@@ -387,7 +387,7 @@
   background: rgba(255, 255, 255, 0.3);
   padding: 4px 12px;
   border-radius: 20px;
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   white-space: nowrap;
 }
 

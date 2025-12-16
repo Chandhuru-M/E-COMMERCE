@@ -94,7 +94,7 @@ nav {
   border: none;
   border-radius: var(--radius-md);
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   transition: all var(--transition-fast);
   cursor: pointer;
   display: flex;
@@ -126,7 +126,7 @@ nav {
 /* Header Login Button - Make it smaller and neater */
 .navbar #login_btn {
   padding: 0 1.2rem !important;
-  font-size: 0.9rem !important;
+  font-size: 1rem !important; /* Increased from 0.9rem */
   font-weight: 600;
   border-radius: 20px !important;
   height: 34px !important;
@@ -164,7 +164,7 @@ nav {
   padding: 0.2rem 0.5rem;
   border-radius: var(--radius-md);
   font-weight: bold;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
   display: inline-block;
 }
 
@@ -239,7 +239,7 @@ nav {
 }
 
 #no_of_reviews {
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   color: var(--color-text-tertiary);
   margin-left: 0.5rem;
 }
@@ -286,7 +286,7 @@ footer {
 /* Product Details Page */
 #product_id {
   color: var(--color-text-tertiary);
-  font-size: 0.8rem;
+  font-size: 0.9rem; /* Increased from 0.8rem */
 }
 
 #product_price {
@@ -316,7 +316,7 @@ footer {
 
 #product_seller {
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
 }
 
 #stock_status {
@@ -399,7 +399,7 @@ footer {
 
 .cart-item-stock {
   color: #007600;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
   margin-bottom: 0.2rem;
 }
 
@@ -409,7 +409,7 @@ footer {
 
 .cart-item-shipping {
   color: var(--color-text-secondary);
-  font-size: 0.85rem;
+  font-size: 0.95rem; /* Increased from 0.85rem */
   margin-bottom: 1rem;
 }
 
@@ -460,7 +460,7 @@ footer {
   color: var(--color-text);
   cursor: pointer;
   transition: all var(--transition-fast);
-  font-size: 0.8rem;
+  font-size: 0.9rem; /* Increased from 0.8rem */
 }
 
 .qty-btn:hover {
@@ -475,6 +475,68 @@ footer {
   border-left: 1px solid var(--color-border);
 }
 
+/* Product Details Quantity Selector Overrides */
+.stockCounter .btn {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  max-width: 30px !important;
+  min-height: 30px !important;
+  max-height: 30px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1rem !important;
+  font-weight: bold !important;
+  border-radius: 4px !important;
+  margin: 0 2px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+  line-height: 1 !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+}
+
+.stockCounter .btn.plus {
+  background-color: #28a745 !important; /* Green */
+  border-color: #28a745 !important;
+  color: white !important;
+}
+
+.stockCounter .btn.plus:hover {
+  background-color: #218838 !important;
+  border-color: #1e7e34 !important;
+}
+
+.stockCounter .btn.minus {
+  background-color: #dc3545 !important; /* Red */
+  border-color: #dc3545 !important;
+  color: white !important;
+}
+
+.stockCounter .btn.minus:hover {
+  background-color: #c82333 !important;
+  border-color: #bd2130 !important;
+}
+
+.stockCounter input.form-control.count {
+  width: 40px !important;
+  height: 30px !important;
+  text-align: center !important;
+  font-weight: 600 !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 4px !important;
+  padding: 0 !important;
+  margin: 0 5px !important;
+  font-size: 0.9rem !important;
+  background-color: white !important;
+  color: #333 !important;
+  box-sizing: border-box !important;
+  vertical-align: middle !important;
+}
+
 .action-separator {
   color: var(--color-border);
   margin: 0 0.5rem;
@@ -484,7 +546,7 @@ footer {
 
 .delete-link, .save-link {
   color: #007185;
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
   cursor: pointer;
   text-decoration: none;
 }
@@ -619,7 +681,7 @@ html.dark-mode .qty-btn:hover {
   margin-bottom: 0.5rem;
   display: block;
   color: var(--color-text-secondary);
-  font-size: 0.9rem;
+  font-size: 1.2rem; /* Increased from 1rem */
 }
 
 .wrapper form .form-control {
@@ -659,7 +721,7 @@ html.dark-mode .qty-btn:hover {
 }
 
 .wrapper form a {
-  font-size: 0.9rem;
+  font-size: 1rem; /* Increased from 0.9rem */
   color: var(--color-primary-red);
   text-decoration: none;
   transition: color var(--transition-fast);
@@ -1072,7 +1134,7 @@ ul.CTAs a:hover {
 }
 
 .review_user {
-  font-size: 0.8rem;
+  font-size: 0.9rem; /* Increased from 0.8rem */
   color: var(--color-text-tertiary);
 }
 /* Barcode Hero Section */
@@ -1143,7 +1205,7 @@ ul.CTAs a:hover {
 
 .barcode-title {
   color: var(--color-text);
-  font-size: 0.85rem;
+  font-size: 1rem; /* Increased from 0.85rem */
   font-weight: 700;
   margin-bottom: 0.15rem;
   animation: fadeIn 0.8s ease-out 0.2s both;
@@ -1162,14 +1224,14 @@ ul.CTAs a:hover {
 
 .barcode-subtitle {
   color: var(--color-text-secondary);
-  font-size: 0.65rem;
+  font-size: 0.85rem; /* Increased from 0.65rem */
   margin-bottom: 0.15rem;
   animation: fadeIn 0.8s ease-out 0.3s both;
 }
 
 .barcode-note {
   color: var(--color-primary-red);
-  font-size: 0.6rem;
+  font-size: 0.8rem; /* Increased from 0.6rem */
   font-weight: 600;
   margin-bottom: 0.4rem;
   animation: fadeIn 0.8s ease-out 0.4s both;
@@ -1189,7 +1251,7 @@ ul.CTAs a:hover {
   gap: 0.25rem;
   padding: 0.3rem 0.7rem;
   border-radius: 50px;
-  font-size: 0.7rem;
+  font-size: 0.9rem; /* Increased from 0.7rem */
   font-weight: 600;
   text-decoration: none;
   border: none;
@@ -1247,15 +1309,15 @@ ul.CTAs a:hover {
   }
 
   .barcode-title {
-    font-size: 0.75rem;
+    font-size: 0.85rem; /* Increased from 0.75rem */
   }
 
   .barcode-subtitle {
-    font-size: 0.6rem;
+    font-size: 0.75rem; /* Increased from 0.6rem */
   }
 
   .barcode-note {
-    font-size: 0.55rem;
+    font-size: 0.7rem; /* Increased from 0.55rem */
     margin-bottom: 0.3rem;
   }
 
@@ -1585,7 +1647,7 @@ html.dark-mode .chart-area {
   color: #ffffff;
   text-align: center;
   padding: 15px 0;
-  font-size: 13px;
+  font-size: 14px; /* Increased from 13px */
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -1604,7 +1666,7 @@ html.dark-mode .chart-area {
 }
 
 .footer-heading {
-  font-size: 16px;
+  font-size: 17px; /* Increased from 16px */
   font-weight: 700;
   color: #ffffff;
   margin-bottom: 14px;
@@ -1622,7 +1684,7 @@ html.dark-mode .chart-area {
 
 .footer-links a {
   color: #dddddd;
-  font-size: 14px;
+  font-size: 15px; /* Increased from 14px */
   text-decoration: none;
   transition: text-decoration 0.2s;
 }
@@ -1634,7 +1696,7 @@ html.dark-mode .chart-area {
 
 .footer-text {
   color: #dddddd;
-  font-size: 14px;
+  font-size: 15px; /* Increased from 14px */
   line-height: 1.5;
 }
 
@@ -1659,7 +1721,7 @@ html.dark-mode .chart-area {
 
 .footer-bottom-links a {
   color: #dddddd;
-  font-size: 12px;
+  font-size: 13px; /* Increased from 12px */
   text-decoration: none;
 }
 
@@ -1669,7 +1731,7 @@ html.dark-mode .chart-area {
 
 .copyright {
   color: #dddddd;
-  font-size: 12px;
+  font-size: 13px; /* Increased from 12px */
   margin: 0;
 }
 
