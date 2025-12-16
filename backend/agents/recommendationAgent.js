@@ -3,12 +3,34 @@ const axios = require("axios");
 
 module.exports = {
   getRecommendations: async (query, userHistory) => {
-    const q = query.toLowerCase();
-    // Simple singularization for better matching (e.g. "watches" -> "watch")
-    const stem = q.replace(/e?s$/, ""); 
-    const regex = new RegExp(stem, "i");
+    const q = (query || '').toLowerCase().trim();
 
-    // 🔍 1. Fetch relevant products from DB
+    // If the query is short/simple, keep existing behavior
+    let keywords = [];
+    if (!q) {
+      keywords = [];
+    } else {
+      // Split into words, remove common stopwords and short tokens
+      const stopwords = new Set(["i","am","the","a","an","to","for","of","in","on","at","is","are","be","you","please","me","can","what","which","and","or","some","my","want","doing","give","do","does","with","by","from"]);
+      keywords = q.split(/[^a-z0-9]+/i)
+        .map(w => w.trim())
+        .filter(w => w && w.length > 2 && !stopwords.has(w));
+    }
+
+    // Build a regex that matches any of the keywords (or fallback to full query stem)
+    let regex;
+    if (keywords.length > 0) {
+      // Escape regex metacharacters in keywords
+      const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const pattern = keywords.map(esc).join("|");
+      regex = new RegExp(`(${pattern})`, "i");
+    } else {
+      // fallback: simple stem behavior (handles single-word queries)
+      const stem = q.replace(/e?s$/, "");
+      regex = new RegExp(stem || ".", "i");
+    }
+
+    // 🔍 1. Fetch relevant products from DB using keyword-friendly regex
     const products = await Product.find({
       $or: [
         { name: { $regex: regex } },

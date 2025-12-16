@@ -11,6 +11,7 @@ const Order = require("../models/orderModel");
 const Product = require("../models/productModel");
 const salesAgent = require("../services/salesAgent");
 const RecommendationEngine = require("../services/recommendationEngine");
+const chatAssistantAgent = require('../agents/chatAssistantAgent');
 const path = require("path");
 const https = require('https');
 
@@ -246,20 +247,48 @@ async function notifyOrderStatusChanged(order) {
 // Shopping functions
 async function handleProductSearch(chatId, query) {
   try {
-    const searchTerm = query.trim();
-    
-    // First try barcode search (alphanumeric)
-    let products = await Product.find({ barcode: searchTerm }).limit(5);
-    
-    // If no barcode match, try text search
-    if (products.length === 0) {
-      products = await Product.find({
-        $or: [
-          { name: { $regex: searchTerm, $options: 'i' } },
-          { category: { $regex: searchTerm, $options: 'i' } },
-          { description: { $regex: searchTerm, $options: 'i' } }
-        ]
-      }).limit(5);
+    const searchTerm = (query || '').trim();
+    console.log(`[TELEGRAM] handleProductSearch: "${searchTerm}"`);
+
+    // 1) Try the central Chat Assistant (same as website endpoint)
+    let products = [];
+    try {
+      const assistantResp = await chatAssistantAgent.handleUserMessage(searchTerm, { source: 'telegram', chatId: String(chatId) });
+      console.log('[TELEGRAM] chatAssistantAgent response:', !!assistantResp, { hasProducts: Array.isArray(assistantResp?.products) ? assistantResp.products.length : 0 });
+      if (assistantResp && Array.isArray(assistantResp.products) && assistantResp.products.length > 0) {
+        products = assistantResp.products.map(p => p.toObject ? p.toObject() : p);
+      }
+    } catch (errAgent) {
+      console.warn('[TELEGRAM] chatAssistantAgent failed, falling back to service search', errAgent?.message || errAgent);
+    }
+
+    // 2) Fallback: try services.salesAgent.search (internal service) if assistant returned nothing
+    if (!products || products.length === 0) {
+      try {
+        const res = await salesAgent.search(null, { query: searchTerm, page: 1, limit: 6 });
+        products = (res && (res.data || res.items || res.data?.items)) || [];
+        if (!Array.isArray(products)) products = [];
+        console.log(`[TELEGRAM] services.salesAgent.search returned ${products.length} product(s)`);
+      } catch (errSearch) {
+        console.warn('[TELEGRAM] services.salesAgent.search failed', errSearch?.message || errSearch);
+      }
+    }
+
+    // 3) Final fallback: direct DB search (barcode or text) if still nothing
+    if (!products || products.length === 0) {
+      // First try barcode search (alphanumeric)
+      products = await Product.find({ barcode: searchTerm }).limit(5);
+      if (products.length === 0 && searchTerm) {
+        const escaped = searchTerm.replace(/[.*+?^${}()|[\\]\\]/g, "\\$&");
+        const regex = new RegExp(escaped, 'i');
+        products = await Product.find({
+          $or: [
+            { name: { $regex: regex } },
+            { category: { $regex: regex } },
+            { description: { $regex: regex } }
+          ]
+        }).limit(5);
+      }
     }
 
     if (products.length === 0) {
@@ -1020,54 +1049,67 @@ function registerBotHandlers() {
     return;
   }
 
-  // AI-powered shopping
+  // AI-powered / Chat assistant routing
   try {
     await bot.sendChatAction(chatId, "typing");
-    
-    // Simple keyword-based product search for now
-    const products = await Product.find({
-      $or: [
-        { name: { $regex: text, $options: 'i' } },
-        { category: { $regex: text, $options: 'i' } }
-      ],
-      stock: { $gt: 0 }
-    }).limit(3);
 
-    if (products.length > 0) {
-      await bot.sendMessage(chatId, `Found ${products.length} products:`);
-      for (const product of products) {
-        const card = buildProductCard(product);
-        
+    // Forward the incoming message to the central chat assistant agent
+    const assistantResp = await chatAssistantAgent.handleUserMessage(text, { source: 'telegram', chatId: String(chatId) });
+
+    // If assistant returned structured product info
+    if (assistantResp && assistantResp.product) {
+      const product = assistantResp.product;
+      const card = buildProductCard(product);
+      if (card.image) {
+        try {
+          const imagePath = product.images && product.images[0] ? product.images[0].image : null;
+          const localImagePath = path.join(__dirname, '..', 'images', imagePath ? imagePath.replace(/^\/images\//, '') : '');
+          await bot.sendPhoto(chatId, localImagePath, { caption: card.text, parse_mode: 'Markdown', ...card.keyboard });
+          return;
+        } catch (err) {
+          console.error('[IMAGE] Error sending product photo:', err?.message || err);
+          await bot.sendMessage(chatId, card.text, { parse_mode: 'Markdown', ...card.keyboard });
+          return;
+        }
+      }
+
+      await bot.sendMessage(chatId, card.text, { parse_mode: 'Markdown', ...card.keyboard });
+      return;
+    }
+
+    // If assistant returned a list of items
+    const list = assistantResp && (assistantResp.products || assistantResp.items || assistantResp.data || assistantResp.list);
+    if (Array.isArray(list) && list.length > 0) {
+      await bot.sendMessage(chatId, `Found ${list.length} item(s):`);
+      for (const p of list.slice(0, 6)) {
+        const prod = p._id || p.id ? p : p.product || p.productData || p;
+        const card = buildProductCard(prod);
         if (card.image) {
           try {
-            const imagePath = product.images && product.images[0] ? product.images[0].image : null;
-            const localImagePath = path.join(__dirname, '..', 'images', imagePath.replace(/^\/images\//, ''));
-            
-            await bot.sendPhoto(chatId, localImagePath, {
-              caption: card.text,
-              parse_mode: "Markdown",
-              ...card.keyboard
-            });
+            const imagePath = prod.images && prod.images[0] ? prod.images[0].image : null;
+            const localImagePath = path.join(__dirname, '..', 'images', imagePath ? imagePath.replace(/^\/images\//, '') : '');
+            await bot.sendPhoto(chatId, localImagePath, { caption: card.text, parse_mode: 'Markdown', ...card.keyboard });
+            continue;
           } catch (err) {
-            console.error('[IMAGE] Error sending photo:', err.message);
-            await bot.sendMessage(chatId, card.text, {
-              parse_mode: "Markdown",
-              ...card.keyboard
-            });
+            console.error('[IMAGE] Error sending photo for list item:', err?.message || err);
           }
-        } else {
-          await bot.sendMessage(chatId, card.text, {
-            parse_mode: "Markdown",
-            ...card.keyboard
-          });
         }
+        await bot.sendMessage(chatId, card.text, { parse_mode: 'Markdown', ...card.keyboard });
       }
       return;
     }
 
+    // Otherwise send assistant's textual reply if any
+    if (assistantResp && assistantResp.reply) {
+      const replyText = typeof assistantResp.reply === 'string' ? assistantResp.reply : JSON.stringify(assistantResp.reply);
+      await bot.sendMessage(chatId, replyText);
+      return;
+    }
+
+    // Fallback: if assistant returned nothing useful, keep original guidance
     await bot.sendMessage(chatId, "I can help you shop! Try:\n• 'Show me laptops'\n• 'I want phones'\n• Or use the menu 👇", mainMenuKeyboard());
   } catch (err) {
-    console.error("AI handler error:", err);
+    console.error("Assistant routing error:", err);
     await bot.sendMessage(chatId, "Sorry, I had trouble understanding.", mainMenuKeyboard());
   }
   });
