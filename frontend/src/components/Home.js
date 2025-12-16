@@ -50,7 +50,7 @@ export  default function Home(){
                     <MetaData title={'Buy Best Products'} />
                     <h1 id="products_heading">Latest Products</h1>
                     <section id="products" className="container mt-5">
-                        <div className="row">
+                        <div className="row justify-content-center">
                             { products && products.map(product => (
                                 <Product col={3} key={product._id}  product={product}/>
                             ))}
