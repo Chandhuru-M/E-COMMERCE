@@ -18,6 +18,7 @@ export  default function Home(){
     const [isFakeStore, setIsFakeStore] = useState(false);
     const [fakeStoreProducts, setFakeStoreProducts] = useState([]);
     const [loadingMore, setLoadingMore] = useState(false);
+    const [endOfDb, setEndOfDb] = useState(false);
 
     useEffect(()=>{
         // Redirect admin to their dashboard
@@ -56,15 +57,21 @@ export  default function Home(){
                     return [...prev, ...newProducts];
                 });
             }
+            
+            // If we received fewer products than page size, we are done with DB
+            if (products.length < (resPerPage || 8)) {
+                setEndOfDb(true);
+            }
+
             setLoadingMore(false);
         }
-    }, [products, currentPage, isFakeStore]);
+    }, [products, currentPage, isFakeStore, resPerPage]);
 
     const loadMore = async () => {
         setLoadingMore(true);
         
         // Check if we have more DB products
-        if (!isFakeStore && productsCount > allProducts.length) {
+        if (!isFakeStore && !endOfDb && productsCount > allProducts.length) {
             const nextPage = currentPage + 1;
             setCurrentPage(nextPage);
             dispatch(getProducts(null, null, null, null, nextPage));
@@ -77,7 +84,15 @@ export  default function Home(){
                 // FakeStore API: https://fakestoreapi.com/products
                 
                 if (fakeStoreProducts.length === 0) {
-                    const { data } = await axios.get('https://fakestoreapi.com/products');
+                    // Use fetch instead of axios to avoid potential config issues
+                    const response = await fetch('https://fakestoreapi.com/products');
+                    
+                    if (!response.ok) {
+                        throw new Error(`External API Error: ${response.statusText}`);
+                    }
+                    
+                    const data = await response.json();
+                    
                     // Transform to match our product shape
                     const transformed = data.map(p => ({
                         _id: `fake_${p.id}`,
@@ -108,7 +123,7 @@ export  default function Home(){
                 }
             } catch (err) {
                 console.error(err);
-                toast.error("Failed to load more products");
+                toast.error(`Failed to load more products: ${err.message}`);
             }
             setLoadingMore(false);
         }

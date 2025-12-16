@@ -590,8 +590,8 @@ html.dark-mode .save-link:hover {
 }
 
 html.dark-mode .stockCounter {
-  background-color: #2d2d2d;
-  border-color: #404040;
+  background-color: #333333;
+  border-color: #666666;
 }
 
 html.dark-mode .qty-btn:hover {
@@ -1378,8 +1378,8 @@ input[type='reset'],
 
 /* Dark mode search bar enhancements */
 html.dark-mode #search_field {
-  border-color: #404040;
-  background-color: #1A1A1A;
+  border-color: #666666;
+  background-color: #222222;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
@@ -1387,7 +1387,7 @@ html.dark-mode #search_field:focus {
   border-color: var(--color-primary-red);
   border-width: 2px;
   box-shadow: 0 0 0 4px rgba(215, 25, 32, 0.2), 0 0 12px rgba(215, 25, 32, 0.4);
-  background-color: #1A1A1A;
+  background-color: #222222;
 }
 
 /* Light mode search bar enhancements */
@@ -1590,14 +1590,14 @@ html.dark-mode .dropdown-toggle {
 /* Dark Mode Overrides for Admin */
 html.dark-mode .sidebar-wrapper,
 html.dark-mode #sidebar {
-  background: #1a1a1a !important; /* Dark Mode: Dark Background */
-  border-right: 1px solid #333;
+  background: #222222 !important; /* Dark Mode: Dark Background */
+  border-right: 1px solid #555;
   color: #ffffff !important;
 }
 
 html.dark-mode #sidebar .sidebar-header {
-  background: #000000 !important;
-  border-bottom: 1px solid #333;
+  background: #1a1a1a !important;
+  border-bottom: 1px solid #555;
 }
 
 html.dark-mode #sidebar .sidebar-header h3 {
@@ -1609,11 +1609,11 @@ html.dark-mode #sidebar ul li a {
 }
 
 html.dark-mode #sidebar ul li:hover {
-  background: #2d2d2d;
+  background: #333333;
 }
 
 html.dark-mode #sidebar ul li.active {
-  background: #2d2d2d;
+  background: #333333;
 }
 
 html.dark-mode #sidebar ul li a:hover {
@@ -1621,8 +1621,8 @@ html.dark-mode #sidebar ul li a:hover {
 }
 
 html.dark-mode #sidebar .dropdown-menu {
-  background-color: #2d2d2d;
-  border: 1px solid #444;
+  background-color: #333333;
+  border: 1px solid #666;
 }
 
 html.dark-mode #sidebar .dropdown-item {
@@ -1630,12 +1630,12 @@ html.dark-mode #sidebar .dropdown-item {
 }
 
 html.dark-mode #sidebar .dropdown-item:hover {
-  background-color: #3d3d3d;
+  background-color: #4d4d4d;
   color: var(--color-primary-red);
 }
 
 html.dark-mode .dashboard-card {
-  background-color: #2d2d2d;
+  background-color: #333333;
   color: #ffffff;
 }
 
@@ -1648,8 +1648,8 @@ html.dark-mode .text-gray-300 {
 }
 
 html.dark-mode .chart-area {
-  background: #2d2d2d !important;
-  border: 1px solid #404040;
+  background: #333333 !important;
+  border: 1px solid #666666;
 }
 
 /* Amazon Footer Styles */

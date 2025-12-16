@@ -88,13 +88,13 @@ html.dark-mode,
 html.dark-mode body {
   /* Dark mode tokens with strong contrast for text and controls */
   --color-bg: #0B0B0B;
-  --color-surface: #121212;
-  --color-surface-alt: #1B1B1B;
+  --color-surface: #1E1E1E;
+  --color-surface-alt: #252525;
   --color-text: #FFFFFF;
-  --color-text-secondary: #E6E6E6;
-  --color-text-tertiary: #BFBFBF;
-  --color-border: #272727;
-  --color-divider: #2F2F2F;
+  --color-text-secondary: #F0F0F0;
+  --color-text-tertiary: #D0D0D0;
+  --color-border: #4A4A4A;
+  --color-divider: #555555;
   --color-shadow: rgba(0, 0, 0, 0.45);
   --color-hover: rgba(215, 25, 32, 0.18);
   --color-focus: rgba(215, 25, 32, 0.28);
