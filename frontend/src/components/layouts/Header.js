@@ -4,6 +4,7 @@ import Search from './Search';
 import {useDispatch, useSelector} from 'react-redux';
 import {DropdownButton, Dropdown, Image} from 'react-bootstrap';
 import { logout } from '../../actions/userActions';
+import ThemeToggle from '../ThemeToggle';
 
 
 export default function Header () {
@@ -18,23 +19,24 @@ export default function Header () {
 
     return (
     <nav className="navbar row">
-        <div className="col-12 col-md-3">
+        <div className="col-12 col-md-2">
           <div className="navbar-brand">
             <Link to="/">
-              <img width="150px" alt='AURA Logo' src="/images/logo.png" />
+              <img width="150px" alt='AURA Logo' src="/images/Aura.png" />
             </Link>
             </div>
         </div>
   
-        <div className="col-12 col-md-6 mt-2 mt-md-0">
+        <div className="col-12 col-md-5 mt-2 mt-md-0">
            <Search/>
         </div>
   
-        <div className="col-12 col-md-3 mt-4 mt-md-0 text-center">
+        <div className="col-12 col-md-5 mt-2 mt-md-0 d-flex align-items-center justify-content-end" style={{gap: '1rem'}}>
+          <ThemeToggle/>
           { isAuthenticated ? 
             (
               <Dropdown className='d-inline' >
-                  <Dropdown.Toggle variant='default text-white pr-5' id='dropdown-basic'>
+                  <Dropdown.Toggle variant='default text-dark pr-5' id='dropdown-basic' style={{background: 'transparent', border: 'none', color: 'inherit'}}>
                     <figure className='avatar avatar-nav'>
                       <Image width="50px" src={user.avatar??'./images/default_avatar.png'}  />
                     </figure>
@@ -60,10 +62,10 @@ export default function Header () {
             <Link to="/login"  className="btn" id="login_btn">Login</Link>
           }
           { user && user.role === 'user' && (
-            <>
-              <Link to="/cart"><span id="cart" className="ml-3">Cart</span></Link>
-              <span className="ml-1" id="cart_count">{cartItems.length}</span>
-            </>
+            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+              <Link to="/cart"><span id="cart">Cart</span></Link>
+              <span id="cart_count">{cartItems.length}</span>
+            </div>
           ) }
         </div>
     </nav>

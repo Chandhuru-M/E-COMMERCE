@@ -76,7 +76,25 @@ const VoiceChat = () => {
       </button>
 
       <button onClick={startListening} style={styles.micBtn}>
-        {isListening ? "🎙 Listening..." : "🎤 Speak"}
+        {isListening ? (
+          <span title="Listening...">
+            {/* Active listening microphone icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style={{verticalAlign: 'middle'}}>
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 16.91c-1.48 1.46-3.51 2.36-5.77 2.36s-4.29-.9-5.77-2.36M9 18.9v-3.93m6 3.93v-3.93"/>
+            </svg>
+            <span style={{marginLeft: '6px'}}>Listening...</span>
+          </span>
+        ) : (
+          <span title="Click to speak">
+            {/* Idle microphone icon */}
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{verticalAlign: 'middle'}}>
+              <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+              <path d="M17 16.91c-1.48 1.46-3.51 2.36-5.77 2.36s-4.29-.9-5.77-2.36M9 18.9v-3.93m6 3.93v-3.93"/>
+            </svg>
+            <span style={{marginLeft: '6px'}}>Speak</span>
+          </span>
+        )}
       </button>
     </div>
   );
