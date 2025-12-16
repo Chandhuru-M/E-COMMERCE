@@ -178,6 +178,18 @@ export default function ChatAssistant() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  // Toggle body class for layout shift
+  useEffect(() => {
+    if (isOpen) {
+      document.body.classList.add('chat-open');
+    } else {
+      document.body.classList.remove('chat-open');
+    }
+    return () => {
+      document.body.classList.remove('chat-open');
+    };
+  }, [isOpen]);
+
   // Voice Recognition Setup
   useEffect(() => {
     const SpeechRecognition =
