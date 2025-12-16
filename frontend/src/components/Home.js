@@ -6,20 +6,18 @@ import Loader from "./layouts/Loader";
 import MetaData from "./layouts/MetaData";
 import Product from "./product/Product";
 import  {toast} from 'react-toastify';
-import Pagination from 'react-js-pagination';
+import axios from 'axios';
 
 export  default function Home(){
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const {products, loading, error, productsCount, resPerPage} =    useSelector((state) => state.productsState)
+    const {products, loading, error, productsCount, resPerPage} = useSelector((state) => state.productsState)
     const { isAuthenticated, user } = useSelector(state => state.authState);
     const [currentPage, setCurrentPage] = useState(1);
- 
-    const setCurrentPageNo = (pageNo) =>{
-
-        setCurrentPage(pageNo)
-       
-    }
+    const [allProducts, setAllProducts] = useState([]);
+    const [isFakeStore, setIsFakeStore] = useState(false);
+    const [fakeStoreProducts, setFakeStoreProducts] = useState([]);
+    const [loadingMore, setLoadingMore] = useState(false);
 
     useEffect(()=>{
         // Redirect admin to their dashboard
@@ -39,38 +37,115 @@ export  default function Home(){
                 position: toast.POSITION.BOTTOM_CENTER
             })
         }
-        dispatch(getProducts(null, null, null, null, currentPage)) 
-    }, [error, dispatch, currentPage, isAuthenticated, user, navigate])
+        
+        // Initial load
+        if(currentPage === 1 && !isFakeStore) {
+             dispatch(getProducts(null, null, null, null, 1));
+        }
+    }, [error, dispatch, isAuthenticated, user, navigate]);
 
+    // Update local state when Redux products change
+    useEffect(() => {
+        if (products && !isFakeStore) {
+            if (currentPage === 1) {
+                setAllProducts(products);
+            } else {
+                // Append new products if they are not already in the list
+                setAllProducts(prev => {
+                    const newProducts = products.filter(p => !prev.some(existing => existing._id === p._id));
+                    return [...prev, ...newProducts];
+                });
+            }
+            setLoadingMore(false);
+        }
+    }, [products, currentPage, isFakeStore]);
+
+    const loadMore = async () => {
+        setLoadingMore(true);
+        
+        // Check if we have more DB products
+        if (!isFakeStore && productsCount > allProducts.length) {
+            const nextPage = currentPage + 1;
+            setCurrentPage(nextPage);
+            dispatch(getProducts(null, null, null, null, nextPage));
+        } else {
+            // Switch to FakeStore or load more from FakeStore
+            setIsFakeStore(true);
+            try {
+                // Fetch from FakeStore
+                // We'll fetch all and slice locally or fetch limit if API supports offset (FakeStore API is simple)
+                // FakeStore API: https://fakestoreapi.com/products
+                
+                if (fakeStoreProducts.length === 0) {
+                    const { data } = await axios.get('https://fakestoreapi.com/products');
+                    // Transform to match our product shape
+                    const transformed = data.map(p => ({
+                        _id: `fake_${p.id}`,
+                        name: p.title,
+                        price: p.price,
+                        description: p.description,
+                        ratings: p.rating.rate,
+                        images: [{ image: p.image }],
+                        category: p.category,
+                        seller: 'FakeStore',
+                        numOfReviews: p.rating.count,
+                        stock: 100
+                    }));
+                    setFakeStoreProducts(transformed);
+                    
+                    // Add first batch (e.g., 8 items)
+                    setAllProducts(prev => [...prev, ...transformed.slice(0, 8)]);
+                } else {
+                    // Add next batch from already fetched fake products
+                    const currentCount = allProducts.filter(p => p._id.toString().startsWith('fake_')).length;
+                    const nextBatch = fakeStoreProducts.slice(currentCount, currentCount + 8);
+                    
+                    if (nextBatch.length > 0) {
+                        setAllProducts(prev => [...prev, ...nextBatch]);
+                    } else {
+                        toast.info("No more products to load", { position: toast.POSITION.BOTTOM_CENTER });
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                toast.error("Failed to load more products");
+            }
+            setLoadingMore(false);
+        }
+    };
 
     return (
         <Fragment>
-            {loading ? <Loader/>:
+            {loading && currentPage === 1 ? <Loader/>:
                 <Fragment>
                     <MetaData title={'Buy Best Products'} />
                     <h1 id="products_heading">Latest Products</h1>
                     <section id="products" className="container mt-5">
                         <div className="row justify-content-center">
-                            { products && products.map(product => (
+                            { allProducts && allProducts.map(product => (
                                 <Product col={3} key={product._id}  product={product}/>
                             ))}
                         
                         </div>
                     </section>
-                    {productsCount > 0 && productsCount > resPerPage?
-                    <div className="d-flex justify-content-center mt-5">
-                           <Pagination 
-                                activePage={currentPage}
-                                onChange={setCurrentPageNo}
-                                totalItemsCount={productsCount}
-                                itemsCountPerPage={resPerPage}
-                                nextPageText={'Next'}
-                                firstPageText={'First'}
-                                lastPageText={'Last'}
-                                itemClass={'page-item'}
-                                linkClass={'page-link'}
-                           />     
-                    </div> : null }
+                    
+                    <div className="d-flex justify-content-center mt-5 mb-5">
+                        <button 
+                            id="load_more_btn"
+                            className="btn btn-primary" 
+                            onClick={loadMore}
+                            disabled={loadingMore}
+                        >
+                            {loadingMore ? (
+                                <>
+                                    <span className="spinner-border spinner-border-sm mr-2" role="status" aria-hidden="true"></span>
+                                    Loading...
+                                </>
+                            ) : (
+                                'Show More'
+                            )}
+                        </button>
+                    </div>
                 </Fragment>
            }
         </Fragment>
