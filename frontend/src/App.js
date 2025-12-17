@@ -85,8 +85,12 @@ function App() {
   useEffect(() => {
     store.dispatch(loadUser())
     async function getStripeApiKey(){
-      const {data} = await axios.get('/api/v1/stripeapi')
-      setStripeApiKey(data.stripeApiKey)
+      try {
+        const {data} = await axios.get('/api/v1/stripeapi')
+        setStripeApiKey(data.stripeApiKey)
+      } catch (error) {
+        console.log('Stripe API key fetch error:', error.message)
+      }
     }
     getStripeApiKey()
   },[])

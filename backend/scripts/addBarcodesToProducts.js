@@ -38,9 +38,12 @@ async function addBarcodesToProducts() {
       const barcodePath = path.join(barcodesDir, `${barcodeCode}.png`);
       await gen(barcodeCode, barcodePath);
 
-      // Update product with barcode
-      product.barcode = barcodeCode;
-      await product.save();
+      // Update product with barcode (skip validation to avoid merchantId requirement)
+      await Product.findByIdAndUpdate(
+        product._id,
+        { barcode: barcodeCode },
+        { runValidators: false }
+      );
 
       console.log(`✅ ${count + 1}. ${product.name} -> ${barcodeCode}`);
       count++;

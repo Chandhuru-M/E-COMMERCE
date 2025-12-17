@@ -378,3 +378,12 @@ body.chat-open #root {
     bottom: 15px;
   }
 }
+
+.helpdesk-header {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  color: white;
+  padding: 40px;
+  border-radius: 10px;
+  margin-bottom: 30px;
+  text-align: center;
+}

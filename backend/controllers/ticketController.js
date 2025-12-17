@@ -62,7 +62,8 @@ exports.createTicket = async (req, res) => {
     ];
 
     const ticket = await Ticket.create(ticketData);
-    await ticket.populate('userId', 'name email').populate('relatedOrderId');
+    await ticket.populate('userId', 'name email');
+    await ticket.populate('relatedOrderId');
 
     // Send confirmation email
     sendTicketEmail({
