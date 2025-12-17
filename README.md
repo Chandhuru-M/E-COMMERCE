@@ -57,7 +57,7 @@ AURA is a next-generation e-commerce platform that combines *Artificial Intellig
 - *Help Desk System*: Support tickets for users/merchants
 
 ### 🎨 UI/UX
-- *Ditya Birla Theme*: Professional red/maroon color scheme
+- *Aditya Birla Theme*: Professional red/maroon color scheme
 - *Light/Dark Mode*: Seamless theme switching with localStorage persistence
 - *Responsive Design*: Mobile-first approach
 - *Accessibility*: WCAG 2.1 Level AA compliant
@@ -436,3 +436,4 @@ For issues or questions:
 ---
 
 *Built with ❤ using React, Node.js, and AI*
+
