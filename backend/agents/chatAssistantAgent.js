@@ -2,14 +2,31 @@
 const ProductService = require("../services/productService");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { tools, executeTool } = require("./toolDefinitions");
+const Config = require("../models/configModel");
 
-// Initialize Gemini
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-// Use a model that supports function calling well
-const model = genAI.getGenerativeModel({ 
-  model: "gemini-flash-latest", // Updated to gemini-flash-latest as it is the supported model
-  tools: tools 
-});
+// Helper to get the model instance dynamically
+async function getGeminiModel() {
+  let apiKey = process.env.GEMINI_API_KEY;
+  
+  try {
+    const config = await Config.findOne().select('+geminiApiKey');
+    if (config && config.geminiApiKey) {
+      apiKey = config.geminiApiKey;
+    }
+  } catch (error) {
+    console.error("Error fetching Gemini API key from DB, using env var:", error);
+  }
+
+  if (!apiKey) {
+    throw new Error("Gemini API Key is missing in both DB and Environment Variables");
+  }
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  return genAI.getGenerativeModel({ 
+    model: "gemini-flash-latest", 
+    tools: tools 
+  });
+}
 
 module.exports = {
   /**
@@ -81,6 +98,9 @@ module.exports = {
         return { success: false, reply: 'Sorry, I could not create a ticket right now. Please try again later.', session };
       }
       
+      // Get Model Dynamically
+      const model = await getGeminiModel();
+
       // Start a chat session
       const chat = model.startChat({
         history: [

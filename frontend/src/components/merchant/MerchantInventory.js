@@ -50,7 +50,7 @@ export default function MerchantInventory() {
         <div className="container container-fluid">
           <div className="d-flex justify-content-between align-items-center my-4">
             <h1>Product Inventory</h1>
-            <Link to="/merchant/product/new" className="btn btn-primary btn-sm" style={{ width: 'auto', minWidth: 'auto', display: 'inline-flex', alignItems: 'center', flexGrow: 0, marginLeft: '20px', whiteSpace: 'nowrap' }}>
+            <Link to="/merchant/product/new" className="btn btn-primary btn-sm" style={{ width: 'auto', minWidth: 'auto', display: 'inline-flex', alignItems: 'center', flexGrow: 0, marginLeft: '20px', whiteSpace: 'nowrap'}}>
               <i className="fa fa-plus mr-1"></i> Add New Product
             </Link>
           </div>

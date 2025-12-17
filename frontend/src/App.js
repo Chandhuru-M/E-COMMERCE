@@ -42,6 +42,7 @@ import UpdateOrder from './components/admin/UpdateOrder';
 import UserList from './components/admin/UserList';
 import UpdateUser from './components/admin/UpdateUser';
 import ReviewList from './components/admin/ReviewList';
+import AdminSettings from './components/admin/AdminSettings';
 import TrackOrder from "./components/order/TrackOrder";
 
 
@@ -210,6 +211,7 @@ function App() {
                       <Route path='/admin/user/:id' element={ <ProtectedRoute isAdmin={true}><UpdateUser/></ProtectedRoute> } />
                       <Route path='/admin/reviews' element={ <ProtectedRoute isAdmin={true}><ReviewList/></ProtectedRoute> } />
                       <Route path='/admin/merchant-requests' element={ <ProtectedRoute isAdmin={true}><MerchantRequests/></ProtectedRoute> } />
+                      <Route path='/admin/settings' element={ <ProtectedRoute isAdmin={true}><AdminSettings/></ProtectedRoute> } />
                       
                       {/* Merchant Routes */}
                       <Route path='/merchant/request' element={<MerchantRequestForm/>} />

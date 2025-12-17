@@ -44,6 +44,7 @@ app.use('/api/v1', require('./routes/assistantRoute'));  // POST /api/v1/assista
 app.use('/api/v1/pos', posRoutes);
 app.use('/api/v1/barcode', barcodeRoutes);
 app.use('/api/v1/merchant', merchantRoutes);
+app.use('/api/v1', require('./routes/configRoutes'));
 // ------------------------------
 // AI AGENT MICRO-SERVICES
 // ------------------------------

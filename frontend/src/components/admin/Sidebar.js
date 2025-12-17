@@ -46,6 +46,10 @@ export default function Sidebar () {
                     <li className={location.pathname.includes('/admin/merchant-requests') ? 'active' : ''}>
                         <Link to="/admin/merchant-requests"><i className="fa fa-store"></i> Merchant Requests</Link>
                     </li>
+
+                    <li className={location.pathname.includes('/admin/settings') ? 'active' : ''}>
+                        <Link to="/admin/settings"><i className="fa fa-cogs"></i> Settings</Link>
+                    </li>
             
                 </ul>
             </nav>
