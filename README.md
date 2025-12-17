@@ -397,11 +397,12 @@ AURA E-Commerce Team © 2025
 ## 📞 Support
 
 For issues or questions:
-- Email: support@aura.com
+- Email: auroecommerce256@gmail.com
 - Create a support ticket in the app
-- GitHub Issues: [Repository Issues]
+
 
 ---
 
 *Built with ❤ using React, Node.js, and AI*
+
 
