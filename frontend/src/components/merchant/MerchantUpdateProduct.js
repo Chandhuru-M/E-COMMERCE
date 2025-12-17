@@ -4,6 +4,8 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getProduct, updateProduct } from "../../actions/productActions";
 import { clearError, clearProductUpdated } from "../../slices/productSlice";
 import { toast } from "react-toastify";
+import MetaData from "../layouts/MetaData";
+import MerchantSidebar from "./MerchantSidebar";
 
 export default function MerchantUpdateProduct() {
   const [name, setName] = useState("");
@@ -119,14 +121,21 @@ export default function MerchantUpdateProduct() {
   }, [product]);
 
   return (
-    <div className="container container-fluid">
-      <Fragment>
-        <div className="wrapper my-5">
-          <form onSubmit={submitHandler} className="shadow-lg" encType='multipart/form-data'>
-            <h1 className="mb-4">Update Product</h1>
+    <div className="row m-0">
+      <MetaData title={'Update Product'} />
+      <div className="col-12 col-md-auto p-0">
+          <MerchantSidebar/>
+      </div>
+      
+      <div className="col-12 col-md">
+        <div className="container container-fluid">
+          <Fragment>
+            <div className="wrapper my-5">
+              <form onSubmit={submitHandler} className="shadow-lg" encType='multipart/form-data'>
+                <h1 className="mb-4">Update Product</h1>
 
-            <div className="form-group">
-              <label htmlFor="name_field">Product Name</label>
+                <div className="form-group">
+                  <label htmlFor="name_field">Product Name</label>
               <input
                 type="text"
                 id="name_field"
@@ -264,6 +273,8 @@ export default function MerchantUpdateProduct() {
           </form>
         </div>
       </Fragment>
+    </div>
+    </div>
     </div>
   )
 }

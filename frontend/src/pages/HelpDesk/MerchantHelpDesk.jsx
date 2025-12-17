@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './HelpDesk.css';
+import MerchantSidebar from '../../components/merchant/MerchantSidebar';
 
 const MerchantHelpDesk = () => {
   const [activeTab, setActiveTab] = useState('tickets');
@@ -160,44 +161,50 @@ const MerchantHelpDesk = () => {
   );
 
   return (
-    <div className="helpdesk-container">
-      <div className="helpdesk-header">
-        <h1>🏪 Merchant Support Center</h1>
-        <p>Get help with your store, payments, inventory, and more</p>
+    <div className="row m-0">
+      <div className="col-12 col-md-auto p-0">
+          <MerchantSidebar/>
       </div>
+      
+      <div className="col-12 col-md">
+        <div className="helpdesk-container">
+          <div className="helpdesk-header">
+            <h1>🏪 Merchant Support Center</h1>
+            <p>Get help with your store, payments, inventory, and more</p>
+          </div>
 
-      <div className="tab-navigation">
-        <button
-          className={`tab-btn ${activeTab === 'tickets' ? 'active' : ''}`}
-          onClick={() => setActiveTab('tickets')}
-        >
-          📋 My Support Tickets
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'faq' ? 'active' : ''}`}
-          onClick={() => setActiveTab('faq')}
-        >
-          ❓ Merchant FAQ
-        </button>
-      </div>
-
-      {activeTab === 'tickets' && (
-        <div className="tickets-view">
-          <div className="tickets-header">
-            <h2>Support Tickets</h2>
+          <div className="tab-navigation">
             <button
-              className="btn-primary"
-              onClick={() => setShowCreateForm(!showCreateForm)}
+              className={`tab-btn ${activeTab === 'tickets' ? 'active' : ''}`}
+              onClick={() => setActiveTab('tickets')}
             >
-              {showCreateForm ? '✕ Close' : '+ New Ticket'}
+              📋 My Support Tickets
+            </button>
+            <button
+              className={`tab-btn ${activeTab === 'faq' ? 'active' : ''}`}
+              onClick={() => setActiveTab('faq')}
+            >
+              ❓ Merchant FAQ
             </button>
           </div>
 
-          {showCreateForm && (
-            <div className="create-ticket-form">
-              <h3>Create New Support Ticket</h3>
-              <form onSubmit={handleCreateTicket}>
-                <div className="form-group">
+          {activeTab === 'tickets' && (
+            <div className="tickets-view">
+              <div className="tickets-header">
+                <h2>Support Tickets</h2>
+                <button
+                  className="btn-primary"
+                  onClick={() => setShowCreateForm(!showCreateForm)}
+                >
+                  {showCreateForm ? '✕ Close' : '+ New Ticket'}
+                </button>
+              </div>
+
+              {showCreateForm && (
+                <div className="create-ticket-form">
+                  <h3>Create New Support Ticket</h3>
+                  <form onSubmit={handleCreateTicket}>
+                    <div className="form-group">
                   <label>Issue Type *</label>
                   <select
                     name="type"
@@ -469,6 +476,8 @@ const MerchantHelpDesk = () => {
           )}
         </div>
       )}
+    </div>
+    </div>
     </div>
   );
 };

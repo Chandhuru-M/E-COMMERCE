@@ -4,6 +4,7 @@ import axios from 'axios';
 import { Link } from 'react-router-dom';
 import Loader from '../layouts/Loader';
 import MetaData from '../layouts/MetaData';
+import MerchantSidebar from './MerchantSidebar';
 
 export default function MerchantOrders() {
   const [orders, setOrders] = useState([]);
@@ -29,25 +30,31 @@ export default function MerchantOrders() {
   if (loading) return <Loader />;
 
   return (
-    <div className="container container-fluid">
+    <div className="row m-0">
       <MetaData title={'My Orders'} />
-      <h1 className="my-4">POS Orders</h1>
+      <div className="col-12 col-md-auto p-0">
+          <MerchantSidebar/>
+      </div>
+      
+      <div className="col-12 col-md">
+        <div className="container container-fluid">
+          <h1 className="my-4">POS Orders</h1>
 
-      {orders.length === 0 ? (
-        <div className="text-center py-5">
-          <i className="fa fa-shopping-cart fa-3x text-muted mb-3"></i>
-          <p className="lead">No orders yet</p>
-          <Link to="/pos" className="btn btn-primary">
-            <i className="fa fa-barcode mr-2"></i> Go to POS
-          </Link>
-        </div>
-      ) : (
-        <div className="table-responsive">
-          <table className="table table-hover">
-            <thead>
-              <tr>
-                <th>Order ID</th>
-                <th>Date</th>
+          {orders.length === 0 ? (
+            <div className="text-center py-5">
+              <i className="fa fa-shopping-cart fa-3x text-muted mb-3"></i>
+              <p className="lead">No orders yet</p>
+              <Link to="/pos" className="btn btn-primary">
+                <i className="fa fa-barcode mr-2"></i> Go to POS
+              </Link>
+            </div>
+          ) : (
+            <div className="table-responsive">
+              <table className="table table-hover">
+                <thead>
+                  <tr>
+                    <th>Order ID</th>
+                    <th>Date</th>
                 <th>Items</th>
                 <th>Total</th>
                 <th>Payment</th>
@@ -90,6 +97,8 @@ export default function MerchantOrders() {
           </table>
         </div>
       )}
+    </div>
+    </div>
     </div>
   );
 }

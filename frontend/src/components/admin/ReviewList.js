@@ -106,7 +106,7 @@ export default function ReviewList() {
             <h1 className="my-4">Review List</h1>
             <div className="row justify-content-center mt-5">
                 <div className="col-5">
-                    <form onSubmit={submitHandler}>
+                    <form onSubmit={submitHandler} className="review-search-form">
                         <div className="form-group">
                             <label >Product ID</label>
                             <input 
@@ -129,7 +129,7 @@ export default function ReviewList() {
                         bordered
                         striped
                         hover
-                        className="px-3"
+                        className="px-3 admin-table"
                     />
                 }
             </Fragment>

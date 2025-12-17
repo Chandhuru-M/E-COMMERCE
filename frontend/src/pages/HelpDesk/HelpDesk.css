@@ -476,3 +476,86 @@
     margin-top: 10px;
   }
 }
+
+/* Dark Mode Overrides */
+html.dark-mode .helpdesk-container {
+  background: #1a1a1a;
+}
+
+html.dark-mode .tab-btn {
+  color: #ccc;
+}
+
+html.dark-mode .tab-btn:hover,
+html.dark-mode .tab-btn.active {
+  color: #667eea;
+}
+
+html.dark-mode .tickets-header h2,
+html.dark-mode .faq-section h2 {
+  color: #ffffff;
+}
+
+html.dark-mode .ticket-form,
+html.dark-mode .ticket-card,
+html.dark-mode .empty-state,
+html.dark-mode .faq-item,
+html.dark-mode .faq-footer {
+  background: #2d2d2d;
+  color: #ffffff;
+}
+
+html.dark-mode .form-group label {
+  color: #ffffff;
+}
+
+html.dark-mode .form-group input,
+html.dark-mode .form-group select,
+html.dark-mode .form-group textarea {
+  background: #333;
+  color: #ffffff;
+  border-color: #555;
+}
+
+html.dark-mode .ticket-id-section h3 {
+  color: #ffffff;
+}
+
+html.dark-mode .ticket-id {
+  background: #444;
+  color: #ddd;
+}
+
+html.dark-mode .ticket-description,
+html.dark-mode .ticket-category {
+  color: #ccc;
+}
+
+html.dark-mode .faq-answer {
+  background: #333;
+}
+
+html.dark-mode .faq-answer p {
+  color: #ddd;
+}
+
+html.dark-mode .helpful-btn,
+html.dark-mode .unhelpful-btn {
+  background: #333;
+  color: #ddd;
+  border-color: #555;
+}
+
+html.dark-mode .filter-btn {
+  background: #333;
+  color: #ddd;
+  border-color: #555;
+}
+
+html.dark-mode .empty-state p {
+  color: #ccc;
+}
+
+html.dark-mode .empty-subtitle {
+  color: #999;
+}

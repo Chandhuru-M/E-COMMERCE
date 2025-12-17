@@ -67,7 +67,7 @@ export default function MerchantRequests() {
           <p className="text-center">No pending merchant requests</p>
         ) : (
           <div className="table-responsive">
-            <table className="table table-striped">
+            <table className="table table-striped admin-table">
               <thead>
                 <tr>
                   <th>Owner Name</th>

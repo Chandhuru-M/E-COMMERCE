@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import axios from 'axios';
 import Loader from '../layouts/Loader';
 import MetaData from '../layouts/MetaData';
+import MerchantSidebar from './MerchantSidebar';
 
 export default function MerchantAnalytics() {
   const [analytics, setAnalytics] = useState({
@@ -45,9 +46,15 @@ export default function MerchantAnalytics() {
   if (loading) return <Loader />;
 
   return (
-    <div className="container container-fluid">
+    <div className="row m-0">
       <MetaData title={'Sales Analytics'} />
-      <h1 className="my-4">Sales Analytics</h1>
+      <div className="col-12 col-md-auto p-0">
+          <MerchantSidebar/>
+      </div>
+      
+      <div className="col-12 col-md">
+        <div className="container container-fluid">
+          <h1 className="my-4">Sales Analytics</h1>
 
       <div className="row">
         <div className="col-md-3 mb-3">
@@ -130,6 +137,8 @@ export default function MerchantAnalytics() {
           )}
         </div>
       </div>
+    </div>
+    </div>
     </div>
   );
 }

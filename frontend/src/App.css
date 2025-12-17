@@ -1094,7 +1094,100 @@ ul.CTAs a:hover {
   background-color: var(--color-primary-maroon);
 }
 
-/* Products List Admin */
+/* Products List Admin - Default (Light Mode) */
+.admin-table td {
+  color: #333 !important;
+  font-weight: 500;
+}
+
+.admin-table th {
+  color: #333 !important;
+  font-weight: bold;
+}
+
+.admin-table .thead-dark th {
+  color: #fff !important;
+  background-color: #343a40 !important;
+}
+
+.admin-table .dataTables_length, 
+.admin-table .dataTables_filter, 
+.admin-table .dataTables_info, 
+.admin-table .dataTables_paginate {
+  color: #333 !important;
+}
+
+.admin-table .dataTables_length select, 
+.admin-table .dataTables_filter input {
+  color: #333 !important;
+  background-color: #fff !important;
+  border: 1px solid #ddd;
+}
+
+/* Products List Admin - Dark Mode */
+html.dark-mode .admin-table td {
+  color: #ffffff !important;
+}
+
+html.dark-mode .admin-table th {
+  color: #ffffff !important;
+}
+
+html.dark-mode .admin-table .dataTables_length, 
+html.dark-mode .admin-table .dataTables_filter, 
+html.dark-mode .admin-table .dataTables_info, 
+html.dark-mode .admin-table .dataTables_paginate {
+  color: #ffffff !important;
+}
+
+html.dark-mode .admin-table .dataTables_length select, 
+html.dark-mode .admin-table .dataTables_filter input {
+  color: #ffffff !important;
+  background-color: #333 !important;
+  border: 1px solid #555;
+}
+
+html.dark-mode .text-muted {
+  color: #b0b0b0 !important;
+}
+
+/* Review List Search Form - Default (Light Mode) */
+.review-search-form label {
+  color: #333 !important;
+  font-weight: 500;
+}
+
+.review-search-form .form-control {
+  background-color: #fff !important;
+  color: #333 !important;
+  border: 1px solid #ddd;
+}
+
+.review-search-form .form-control:focus {
+  background-color: #fff !important;
+  color: #333 !important;
+  border-color: var(--color-primary-red);
+  box-shadow: 0 0 0 0.2rem rgba(215, 25, 32, 0.25);
+}
+
+/* Review List Search Form - Dark Mode */
+html.dark-mode .review-search-form label {
+  color: #ffffff !important;
+}
+
+html.dark-mode .review-search-form .form-control {
+  background-color: #333 !important;
+  color: #ffffff !important;
+  border: 1px solid #555;
+}
+
+html.dark-mode .review-search-form .form-control:focus {
+  background-color: #444 !important;
+  color: #ffffff !important;
+  border-color: var(--color-primary-red);
+  box-shadow: 0 0 0 0.2rem rgba(215, 25, 32, 0.25);
+}
+
 #products_table .btn {
   padding: 0.2rem 0.5rem;
   margin-left: 0.4rem;
