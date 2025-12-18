@@ -69,8 +69,10 @@ import AdminDashboard from './pages/AdminDashboard/AdminDashboard.jsx';
 // Configure axios to send credentials (cookies) with every request
 axios.defaults.withCredentials = true;
 // Set Base URL for Production (Vercel)
-if (process.env.REACT_APP_API_URL) {
-  axios.defaults.baseURL = process.env.REACT_APP_API_URL;
+// Fallback to Render URL if env var is missing (ensures it works immediately)
+const apiUrl = process.env.REACT_APP_API_URL || "https://aura-backend-9pxn.onrender.com";
+if (process.env.NODE_ENV === 'production') {
+  axios.defaults.baseURL = apiUrl;
 }
 
 const MainLayout = ({children}) => {

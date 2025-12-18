@@ -25,7 +25,7 @@ export const getProducts = (keyword, price, category, rating, currentPage) => as
         dispatch(productsSuccess(data))
     } catch (error) {
         //handle error
-        dispatch(productsFail(error.response.data.message))
+        dispatch(productsFail(error.response?.data?.message || error.message))
     }
     
 }
@@ -39,7 +39,7 @@ export const getProduct = id => async (dispatch) => {
         dispatch(productSuccess(data))
     } catch (error) {
         //handle error
-        dispatch(productFail(error.response.data.message))
+        dispatch(productFail(error.response?.data?.message || error.message))
     }
     
 }
