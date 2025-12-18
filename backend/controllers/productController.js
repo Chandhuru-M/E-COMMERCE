@@ -2,6 +2,19 @@ const Product = require('../models/productModel');
 const ErrorHandler = require('../utils/errorHandler')
 const catchAsyncError = require('../middlewares/catchAsyncError')
 const APIFeatures = require('../utils/apiFeatures');
+const productsData = require('../data/products.json');
+
+// Seed Products - /api/v1/seed
+exports.seedProducts = catchAsyncError(async (req, res, next) => {
+    // Only allow this in development or via a secret key if needed, but for now open for setup
+    await Product.deleteMany();
+    await Product.insertMany(productsData);
+    res.status(200).json({
+        success: true,
+        count: productsData.length,
+        message: "Database seeded successfully with default products"
+    })
+})
 
 //Get Products - /api/v1/products
 exports.getProducts = catchAsyncError(async (req, res, next)=>{
